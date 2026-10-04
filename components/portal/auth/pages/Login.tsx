@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import {useRouter} from 'next/navigation';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase-browser';
 import { useTheme } from '../../app/theme/theme-context';
 import { Button } from '../../components/Button';
@@ -90,7 +91,7 @@ const Login: React.FC = () => {
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_#1d4ed8_0,_transparent_38%),radial-gradient(circle_at_bottom_right,_#0f766e_0,_transparent_32%)]" />
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center justify-center lg:grid lg:grid-cols-[1.15fr_.85fr] lg:gap-16">
         <section className="mb-10 hidden text-white lg:block">
-          <div className="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 text-xl font-bold shadow-lg ring-1 ring-white/20">A</div>
+          <Image src="/assets/white-pearls-group-white.png" alt="White Pearls Group" width={2072} height={1150} className="mb-8 h-auto w-48" priority />
           <p className="mb-3 text-sm font-semibold uppercase tracking-[0.24em] text-primary-200">Operations workspace</p>
           <h1 className="max-w-xl text-5xl font-semibold leading-tight tracking-tight">Keep every order, team, and delivery moving.</h1>
           <p className="mt-6 max-w-lg text-lg leading-8 text-slate-300">A secure workspace for the people who manage service assurance from first assignment to final confirmation.</p>
@@ -99,7 +100,7 @@ const Login: React.FC = () => {
       <div className="w-full max-w-md space-y-8 rounded-3xl border border-white/15 bg-white/95 p-6 shadow-2xl shadow-slate-950/40 backdrop-blur-xl dark:bg-neutral-900/95 sm:p-8">
         {/* Theme toggle */}
         <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-lg font-bold text-white">A</div><span className="font-semibold text-neutral-900 dark:text-white">AOLMS</span></div>
+          <span className="font-semibold text-neutral-900 dark:text-white">AOLMS</span>
           <button
             onClick={toggleTheme}
             className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"

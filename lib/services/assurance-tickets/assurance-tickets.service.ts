@@ -62,7 +62,7 @@ export class AssuranceTicketsService {
     } catch (error) { translateDatabaseError(error); }
   }
 
-  private async saveRow(em: EntityManager, row: any, actor: Actor) {
+  async saveRow(em: EntityManager, row: any, actor: Actor) {
     const id = uuid(row.id), mutation = uuid(row.mutation_id);
     await em.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [id]);
     const [old] = await em.query('SELECT * FROM assurance_tickets WHERE id=$1 FOR UPDATE', [id]);

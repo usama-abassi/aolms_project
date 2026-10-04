@@ -1,2 +1,2 @@
-import {redirect} from 'next/navigation';
-export default function Page(){redirect('/controller/ont-db');}
+import Screen from '@/components/portal/features/controller/pages/Inventory';
+export default function Page(){return <Screen />;}
