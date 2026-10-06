@@ -1,10 +1,48 @@
 import {describe,it,expect,afterAll} from 'vitest';
 import {db,getPool} from '@/lib/db';
 import {MaterialInventory} from '@/lib/services/material-inventory';
+import {InventoryRequests} from '@/lib/services/inventory-requests';
 import {randomUUID} from 'node:crypto';
 import {DeliveryGridService} from '@/lib/services/assurance-tickets/delivery-grid.service';
 import {getProjectsService,getOperationsDatabase,getProjectAuditService,getStaffService,getServiceDeliveryService} from '@/lib/services/registry';
 describe('Existing Supabase database (read only)',()=>{
+ it('inventory requests validate, deduct batches atomically and deduplicate retries (rolled back)',async()=>{
+  await expect(db.transaction(async tx=>{
+   const connection={query:tx.query.bind(tx),transaction:async fn=>fn(tx)} as typeof db;
+   const inventory=new MaterialInventory(connection),requests=new InventoryRequests(connection);
+   const [project]=await tx.query("SELECT id FROM projects WHERE code='SERVICE_ASSURANCE'");
+   const actor=randomUUID();
+   const first=await inventory.create(project.id,{kind:'material',name:'Request rollback first',unit:'m'},actor);
+   const second=await inventory.create(project.id,{kind:'material',name:'Request rollback second',unit:'pcs'},actor);
+   for(const material of [first,second])await inventory.create(project.id,{kind:'opening',material_id:material.id,quantity:10,date:'2026-01-01',mutation_id:randomUUID()},actor);
+   const payload={project_id:project.id,request_id:randomUUID(),items:[{material_id:first.id,quantity:2.1234},{material_id:second.id,quantity:3}]};
+   await expect(requests.deduct({...payload,items:[payload.items[0],{material_id:second.id,quantity:1.5}]},actor)).rejects.toThrow('whole number');
+   for(const kind of ['received','faulty','adjustment'])await expect(inventory.create(project.id,{kind,direction:'deduct',reference:'Test units',material_id:second.id,quantity:1.5,date:'2026-01-02',mutation_id:randomUUID()},actor)).rejects.toThrow('whole number');
+   for(const quantity of [0,-1,NaN,Infinity,1.12345,'2'])await expect(requests.deduct({...payload,items:[{material_id:first.id,quantity}]},actor)).rejects.toThrow('Quantity');
+   await expect(requests.deduct({...payload,project_id:randomUUID()},actor)).rejects.toThrow('Project');
+   await expect(requests.deduct({...payload,items:[{material_id:randomUUID(),quantity:1}]},actor)).rejects.toThrow('does not belong');
+   await expect(requests.deduct({...payload,items:[payload.items[0],payload.items[0]]},actor)).rejects.toThrow('only once');
+   await expect(requests.deduct({...payload,items:[payload.items[0],{material_id:second.id,quantity:11}]},actor)).rejects.toThrow('Insufficient stock');
+   expect((await requests.available(project.id)).find(r=>r.id===first.id).available).toBe(10);
+   await requests.deduct(payload,actor);
+   await requests.deduct(payload,actor);
+   const available=await requests.available(project.id);
+   expect(available.find(r=>r.id===first.id).available).toBe(7.8766);
+   expect(available.find(r=>r.id===second.id).available).toBe(7);
+   expect(await tx.query("SELECT id FROM inventory_entries WHERE reference=$1",[`inventory-request:${payload.request_id}`])).toHaveLength(2);
+   await expect(requests.deduct({...payload,items:[{material_id:first.id,quantity:1}]},actor)).rejects.toThrow('already been used');
+   await expect(requests.deduct(payload,randomUUID())).rejects.toThrow('already been used');
+   await expect(requests.deduct({...payload,request_id:randomUUID(),items:[{material_id:second.id,quantity:8}]},actor)).rejects.toThrow('Insufficient stock');
+   const [{month}]=await tx.query("SELECT to_char(CURRENT_TIMESTAMP AT TIME ZONE 'Asia/Bahrain','YYYY-MM') AS month");
+   const report=await inventory.list(project.id,month);
+   expect(report.requestHistory.filter(r=>r.reference===`inventory-request:${payload.request_id}`)).toHaveLength(2);
+   const ownHistory=await requests.history(actor);
+   expect(ownHistory).toHaveLength(2);
+   expect(ownHistory.map(r=>Number(r.quantity)).sort()).toEqual([2.1234,3]);
+   expect(await requests.history(randomUUID())).toEqual([]);
+   throw new Error('request test rollback');
+  })).rejects.toThrow('request test rollback');
+ },60000);
  it('Phase 1 grid persists exact drafts and promotes safely without changing old records on invalid edits',async()=>{
   await expect(db.transaction(async tx=>{
    const service=new DeliveryGridService({query:tx.query.bind(tx),transaction:async fn=>fn(tx)} as typeof db);
@@ -75,7 +113,18 @@ describe('Existing Supabase database (read only)',()=>{
    await service.create(project.id,add('received','2026-10-01',5),actor);
    report=await service.list(project.id,'2026-09');
    expect(report.rows.find(r=>r.id===material.id).remaining).toBe(110.125);
+   const correction={...add('adjustment','2026-09-05',2.125),direction:'deduct',reference:'Used elsewhere'};
+   await expect(service.create(project.id,{...correction,reference:' '},actor)).rejects.toThrow('reference');
+   await expect(service.create(project.id,{...correction,direction:'other'},actor)).rejects.toThrow('add or deduct');
+   await expect(service.create(project.id,{...correction,quantity:111},actor)).rejects.toThrow('exceeds');
+   await service.create(project.id,correction,actor);
+   await service.create(project.id,correction,actor);
+   await service.create(project.id,{...correction,mutation_id:randomUUID(),direction:'add',quantity:1,reference:'Quantity correction'},actor);
+   report=await service.list(project.id,'2026-09');
+   expect(report.rows.find(r=>r.id===material.id)).toMatchObject({used:2.125,received:1,remaining:109});
+   expect(report.history.filter(r=>r.reference.startsWith('Stock correction:'))).toHaveLength(2);
+   expect((await tx.query('SELECT actor_id FROM inventory_entries WHERE mutation_id=$1',[correction.mutation_id]))[0].actor_id).toBe(actor);
    throw new Error('inventory rollback complete');
   })).rejects.toThrow('inventory rollback complete');
- },30000);
+ },60000);
 });

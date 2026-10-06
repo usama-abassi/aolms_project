@@ -7,6 +7,7 @@ import { Card } from '../../../components/Card';
 import { Button } from '../../../components/Button';
 import { Modal } from '../../../components/Modal';
 import { supabase } from '@/lib/supabase-browser';
+import RequestInventory from '../components/RequestInventory';
 
 export default function AssuranceTasks({ todo = false, audit = false, projectId }: { todo?: boolean; audit?: boolean; projectId?:string }) {
   const [filter, setFilter] = useState<'all' | 'completed' | 'pending'>('all');
@@ -51,7 +52,7 @@ export default function AssuranceTasks({ todo = false, audit = false, projectId 
     : <Link className={`task-action ${r.can_edit ? '' : 'task-action--view'}`} aria-label={`${r.can_edit ? 'Edit' : 'View'} ${r.ticket_number}`} href={`/technician/assurance-form/${r.id}`}>{r.can_edit ? 'Edit' : 'View'}</Link>;
   return <div className="space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-h2 font-semibold">{audit ? 'Audit' : todo ? 'To-Do' : 'Submitted Orders'}</h1>
-      <Button variant="outline" onClick={() => { tasks.refetch(); if (!audit) delivery.refetch(); }}>Refresh</Button></div>
+      <div className="flex flex-wrap items-start gap-2">{todo&&!audit&&<RequestInventory userId={user.data!}/>}<Button variant="outline" onClick={() => { tasks.refetch(); if (!audit) delivery.refetch(); }}>Refresh</Button></div></div>
     {audit && <div className="flex flex-wrap gap-3">{(['all', 'completed', 'pending'] as const).map(f =>
       <Button key={f} variant={filter === f ? 'primary' : 'outline'} aria-pressed={filter === f} onClick={() => setFilter(f)}>
         {f === 'all' ? 'All' : f === 'completed' ? `Completed: ${tasks.data?.counts.completed || 0}` : `To be completed: ${tasks.data?.counts.pending || 0}`}

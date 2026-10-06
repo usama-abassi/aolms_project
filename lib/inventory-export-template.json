@@ -1,0 +1,726 @@
+{
+  "headers": [
+    "Delivery Material Dashboard",
+    "Item No",
+    "Unite",
+    "Materials",
+    "Start of the Month Count",
+    "Used Materials",
+    "Received Materials",
+    "Faulty Materials",
+    "Remain Materials"
+  ],
+  "heights": [
+    19.8,
+    24.0,
+    13.2,
+    75.0,
+    24.0,
+    13.2,
+    13.2,
+    13.2,
+    13.2
+  ],
+  "columns": [
+    {
+      "code": "Item No",
+      "name": "Materials",
+      "styles": [
+        1,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+      ]
+    },
+    {
+      "code": "10000276",
+      "name": "Cable4F,SM,Outdoor(4F/Tube),GPON",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000079",
+      "name": "DRAWROPE,NO.1 500M/ 0.6 MM, BT 071830 CW",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000084",
+      "name": "FIBER CAPPING",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000085",
+      "name": "FIBER CONNECTOR BEND",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000105 /  1000223",
+      "name": "Fiber Termination Box, 2F, SC,In/Outdoor",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000087",
+      "name": "Fiber Mechanical Splice, 1F, SM/MM(DELIVERY)",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "10000466",
+      "name": "Bare Fiber Protection Sleeve - Single 60mm",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        19,
+        22,
+        22,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "10000389",
+      "name": "WATERPROOF RUBBER SEAL",
+      "styles": [
+        2,
+        7,
+        11,
+        13,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000086",
+      "name": "FIBER HOUSE TERMINATION BOX,1F,SM,INDO (DELIVERY)",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000021",
+      "name": "BRACKET,NO.22,011114",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000067",
+      "name": "CLAMP,D/W NO.10A,(NYLON COATED STEEL WIR",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000187",
+      "name": "Quick SC/UPC Connector Blue for GPON (DELIVERY)",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        19,
+        23,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000040",
+      "name": "CABLE 2F,GPON AERIAL DROP,BTC/1023/FIBER (DELIVERY)",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000185",
+      "name": "QUICK SC CONNECTOR KIT FOR SM FIBRE (DELIVERY)",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000104",
+      "name": "BNET-PIGTAIL-SM-SC/UPC-UNIVERSAL",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000041",
+      "name": "Cable2F,SM,Fully Filled,BTC/1021/Fibre",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "10000471 / 10000646",
+      "name": "Huawei HG8245X6-8Ne-20 (WiFi-6) (DELIVERY)",
+      "styles": [
+        2,
+        6,
+        6,
+        14,
+        20,
+        22,
+        25,
+        25,
+        20
+      ]
+    },
+    {
+      "code": "1000149 / 10000519",
+      "name": "HUAWEI ECHOLIFE HG8M8240 H5",
+      "styles": [
+        2,
+        6,
+        6,
+        14,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000148",
+      "name": "2G",
+      "styles": [
+        2,
+        6,
+        6,
+        14,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000172",
+      "name": "PATCH CORD HUAWEI ECHOLIFE HG8245 W5 (DELIVERY)",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000173",
+      "name": "PATCH CORD HUAWEI ECHOLIFE HG8M8240 H5 (DELIVERY)",
+      "styles": [
+        2,
+        6,
+        6,
+        12,
+        21,
+        24,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000074",
+      "name": "COMPOUND NO.16A, 1KG PACKETS 072136",
+      "styles": [
+        2,
+        6,
+        6,
+        15,
+        19,
+        24,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "None",
+      "name": "20mm Piping",
+      "styles": [
+        2,
+        6,
+        6,
+        14,
+        19,
+        22,
+        25,
+        28,
+        28
+      ]
+    },
+    {
+      "code": "None",
+      "name": "16mm Trunking",
+      "styles": [
+        2,
+        6,
+        6,
+        14,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000022",
+      "name": "CABLE DROPWIRE NO.10, CW1411",
+      "styles": [
+        2,
+        8,
+        8,
+        16,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000042",
+      "name": "CABLE,2PR/0.5MM,TWISTED TCW PVC INSUL.WH",
+      "styles": [
+        2,
+        8,
+        8,
+        16,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000541",
+      "name": "CABLE,2 PR/0.5MM ,LEADING_IN SP1068",
+      "styles": [
+        2,
+        8,
+        8,
+        16,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000553",
+      "name": "JUMPER,2W/0.5,7000SERIES,(BLU/YL) 400M",
+      "styles": [
+        2,
+        8,
+        8,
+        16,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1001965",
+      "name": "PLUG 4-WIRE 6-POS AMERICAN TYPE WE4 LINE",
+      "styles": [
+        2,
+        8,
+        8,
+        16,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1001968",
+      "name": "B.S PLUG 431A",
+      "styles": [
+        2,
+        8,
+        8,
+        16,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000075",
+      "name": "CONNECTOR,3M UR2 RED(IN CARTRIDGES)",
+      "styles": [
+        2,
+        8,
+        8,
+        16,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1004400",
+      "name": "BOX PLASTIC PVC,3X3\"(FOR LINE JACK UNIT)",
+      "styles": [
+        2,
+        8,
+        8,
+        16,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1004425",
+      "name": "JACK LINE,UNIT 3/4A,MASTER (WITH LOGO)",
+      "styles": [
+        2,
+        8,
+        8,
+        16,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1004428",
+      "name": "JACK,4/4A,MASTER,(WITH BATELCO LOGO)",
+      "styles": [
+        2,
+        8,
+        8,
+        16,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000214",
+      "name": "TP-LINK ARCHER VR600 AC1600",
+      "styles": [
+        2,
+        8,
+        8,
+        16,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000068",
+      "name": "CLIP 5-MM WHITE FOR DROPWIRE(100 /BOX)",
+      "styles": [
+        2,
+        8,
+        8,
+        16,
+        19,
+        24,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000071",
+      "name": "CLIP CABLE 6MM ROUND WHITE",
+      "styles": [
+        2,
+        8,
+        8,
+        16,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000207",
+      "name": "STRAP CABLE THE 3M 10,NO 1ABT 072492",
+      "styles": [
+        2,
+        8,
+        8,
+        16,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "1000213",
+      "name": "TAPE PVC INSULATING SIZE 3/4,BLACK",
+      "styles": [
+        3,
+        8,
+        8,
+        16,
+        19,
+        22,
+        25,
+        28,
+        20
+      ]
+    },
+    {
+      "code": "",
+      "name": "RAWL,PLUG,PLASTIC,(6MM) 1*100",
+      "styles": [
+        4,
+        9,
+        9,
+        17,
+        19,
+        24,
+        26,
+        29,
+        20
+      ]
+    },
+    {
+      "code": "1000192",
+      "name": "SCREW,WOOD BRASS,1.5\"NO.12 (1*100)",
+      "styles": [
+        4,
+        9,
+        9,
+        17,
+        19,
+        24,
+        26,
+        29,
+        20
+      ]
+    },
+    {
+      "code": "1000194",
+      "name": "SCREW,WOOD BRASS,1.5\"NO.12 (1*100)",
+      "styles": [
+        4,
+        9,
+        9,
+        17,
+        19,
+        24,
+        26,
+        29,
+        20
+      ]
+    },
+    {
+      "code": "1000204",
+      "name": "SPRAY, WD-40 400ML",
+      "styles": [
+        4,
+        10,
+        10,
+        18,
+        19,
+        24,
+        27,
+        30,
+        20
+      ]
+    }
+  ],
+  "widths": [
+    {
+      "min": "1",
+      "max": "1",
+      "width": "16.1296296296296",
+      "customWidth": "1"
+    },
+    {
+      "min": "2",
+      "max": "5",
+      "width": "9.5",
+      "customWidth": "1"
+    },
+    {
+      "min": "6",
+      "max": "6",
+      "width": "10.8796296296296",
+      "customWidth": "1"
+    },
+    {
+      "min": "7",
+      "max": "9",
+      "width": "9.5",
+      "customWidth": "1"
+    },
+    {
+      "min": "10",
+      "max": "10",
+      "width": "11.1296296296296",
+      "customWidth": "1"
+    },
+    {
+      "min": "11",
+      "max": "44",
+      "width": "9.5",
+      "customWidth": "1"
+    }
+  ],
+  "styles": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\r\n<styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:mc=\"http://schemas.openxmlformats.org/markup-compatibility/2006\" mc:Ignorable=\"xr9\" xmlns:xr9=\"http://schemas.microsoft.com/office/spreadsheetml/2016/revision9\"><numFmts count=\"4\"><numFmt numFmtId=\"42\" formatCode=\"_(&quot;$&quot;* #,##0_);_(&quot;$&quot;* \\(#,##0\\);_(&quot;$&quot;* &quot;-&quot;_);_(@_)\"/><numFmt numFmtId=\"44\" formatCode=\"_(&quot;$&quot;* #,##0.00_);_(&quot;$&quot;* \\(#,##0.00\\);_(&quot;$&quot;* &quot;-&quot;??_);_(@_)\"/><numFmt numFmtId=\"176\" formatCode=\"_ * #,##0.00_ ;_ * \\-#,##0.00_ ;_ * &quot;-&quot;??_ ;_ @_ \"/><numFmt numFmtId=\"177\" formatCode=\"_ * #,##0_ ;_ * \\-#,##0_ ;_ * &quot;-&quot;_ ;_ @_ \"/></numFmts><fonts count=\"27\"><font><sz val=\"10\"/><color rgb=\"FF000000\"/><name val=\"Arial\"/><charset val=\"134\"/><scheme val=\"minor\"/></font><font><sz val=\"15\"/><color rgb=\"FFFFFFFF\"/><name val=\"Calibri\"/><charset val=\"134\"/></font><font><sz val=\"10\"/><name val=\"Arial\"/><charset val=\"134\"/><scheme val=\"minor\"/></font><font><sz val=\"9\"/><color rgb=\"FFFFFFFF\"/><name val=\"Calibri\"/><charset val=\"134\"/></font><font><sz val=\"9\"/><color rgb=\"FF000000\"/><name val=\"Calibri\"/><charset val=\"134\"/></font><font><sz val=\"9\"/><color theme=\"1\"/><name val=\"Calibri\"/><charset val=\"134\"/></font><font><sz val=\"10\"/><color theme=\"1\"/><name val=\"Arial\"/><charset val=\"134\"/></font><font><sz val=\"11\"/><color theme=\"1\"/><name val=\"Arial\"/><charset val=\"134\"/><scheme val=\"minor\"/></font><font><u/><sz val=\"11\"/><color rgb=\"FF0000FF\"/><name val=\"Arial\"/><charset val=\"0\"/><scheme val=\"minor\"/></font><font><u/><sz val=\"11\"/><color rgb=\"FF800080\"/><name val=\"Arial\"/><charset val=\"0\"/><scheme val=\"minor\"/></font><font><sz val=\"11\"/><color rgb=\"FFFF0000\"/><name val=\"Arial\"/><charset val=\"0\"/><scheme val=\"minor\"/></font><font><b/><sz val=\"18\"/><color theme=\"3\"/><name val=\"Arial\"/><charset val=\"134\"/><scheme val=\"minor\"/></font><font><i/><sz val=\"11\"/><color rgb=\"FF7F7F7F\"/><name val=\"Arial\"/><charset val=\"0\"/><scheme val=\"minor\"/></font><font><b/><sz val=\"15\"/><color theme=\"3\"/><name val=\"Arial\"/><charset val=\"134\"/><scheme val=\"minor\"/></font><font><b/><sz val=\"13\"/><color theme=\"3\"/><name val=\"Arial\"/><charset val=\"134\"/><scheme val=\"minor\"/></font><font><b/><sz val=\"11\"/><color theme=\"3\"/><name val=\"Arial\"/><charset val=\"134\"/><scheme val=\"minor\"/></font><font><sz val=\"11\"/><color rgb=\"FF3F3F76\"/><name val=\"Arial\"/><charset val=\"0\"/><scheme val=\"minor\"/></font><font><b/><sz val=\"11\"/><color rgb=\"FF3F3F3F\"/><name val=\"Arial\"/><charset val=\"0\"/><scheme val=\"minor\"/></font><font><b/><sz val=\"11\"/><color rgb=\"FFFA7D00\"/><name val=\"Arial\"/><charset val=\"0\"/><scheme val=\"minor\"/></font><font><b/><sz val=\"11\"/><color rgb=\"FFFFFFFF\"/><name val=\"Arial\"/><charset val=\"0\"/><scheme val=\"minor\"/></font><font><sz val=\"11\"/><color rgb=\"FFFA7D00\"/><name val=\"Arial\"/><charset val=\"0\"/><scheme val=\"minor\"/></font><font><b/><sz val=\"11\"/><color theme=\"1\"/><name val=\"Arial\"/><charset val=\"0\"/><scheme val=\"minor\"/></font><font><sz val=\"11\"/><color rgb=\"FF006100\"/><name val=\"Arial\"/><charset val=\"0\"/><scheme val=\"minor\"/></font><font><sz val=\"11\"/><color rgb=\"FF9C0006\"/><name val=\"Arial\"/><charset val=\"0\"/><scheme val=\"minor\"/></font><font><sz val=\"11\"/><color rgb=\"FF9C6500\"/><name val=\"Arial\"/><charset val=\"0\"/><scheme val=\"minor\"/></font><font><sz val=\"11\"/><color theme=\"0\"/><name val=\"Arial\"/><charset val=\"0\"/><scheme val=\"minor\"/></font><font><sz val=\"11\"/><color theme=\"1\"/><name val=\"Arial\"/><charset val=\"0\"/><scheme val=\"minor\"/></font></fonts><fills count=\"41\"><fill><patternFill patternType=\"none\"/></fill><fill><patternFill patternType=\"gray125\"/></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FF4472C4\"/><bgColor rgb=\"FF4472C4\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FF1F3864\"/><bgColor rgb=\"FF1F3864\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFBDD7EE\"/><bgColor rgb=\"FFBDD7EE\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFEDEDED\"/><bgColor rgb=\"FFEDEDED\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFFFE699\"/><bgColor rgb=\"FFFFE699\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFFFFF00\"/><bgColor rgb=\"FFFFFF00\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FF9FC5E8\"/><bgColor rgb=\"FF9FC5E8\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFFFFFFF\"/><bgColor rgb=\"FFFFFFFF\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFFFFFCC\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFFFCC99\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFF2F2F2\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFA5A5A5\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFC6EFCE\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFFFC7CE\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFFFEB9C\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"4\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"4\" tint=\"0.799981688894314\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"4\" tint=\"0.599993896298105\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"4\" tint=\"0.399975585192419\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"5\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"5\" tint=\"0.799981688894314\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"5\" tint=\"0.599993896298105\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"5\" tint=\"0.399975585192419\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"6\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"6\" tint=\"0.799981688894314\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"6\" tint=\"0.599993896298105\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"6\" tint=\"0.399975585192419\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"7\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"7\" tint=\"0.799981688894314\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"7\" tint=\"0.599993896298105\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"7\" tint=\"0.399975585192419\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"8\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"8\" tint=\"0.799981688894314\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"8\" tint=\"0.599993896298105\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"8\" tint=\"0.399975585192419\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"9\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"9\" tint=\"0.799981688894314\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"9\" tint=\"0.599993896298105\"/><bgColor indexed=\"64\"/></patternFill></fill><fill><patternFill patternType=\"solid\"><fgColor theme=\"9\" tint=\"0.399975585192419\"/><bgColor indexed=\"64\"/></patternFill></fill></fills><borders count=\"15\"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style=\"thin\"><color rgb=\"FF000000\"/></left><right/><top style=\"thin\"><color rgb=\"FF000000\"/></top><bottom style=\"thin\"><color rgb=\"FF000000\"/></bottom><diagonal/></border><border><left/><right/><top style=\"thin\"><color rgb=\"FF000000\"/></top><bottom style=\"thin\"><color rgb=\"FF000000\"/></bottom><diagonal/></border><border><left/><right style=\"thin\"><color rgb=\"FF000000\"/></right><top style=\"thin\"><color rgb=\"FF000000\"/></top><bottom style=\"thin\"><color rgb=\"FF000000\"/></bottom><diagonal/></border><border><left style=\"thin\"><color rgb=\"FF000000\"/></left><right style=\"thin\"><color rgb=\"FF000000\"/></right><top style=\"thin\"><color rgb=\"FF000000\"/></top><bottom style=\"thin\"><color rgb=\"FF000000\"/></bottom><diagonal/></border><border><left style=\"thin\"><color rgb=\"FF000000\"/></left><right style=\"thin\"><color rgb=\"FF000000\"/></right><top/><bottom style=\"thin\"><color rgb=\"FF000000\"/></bottom><diagonal/></border><border><left/><right style=\"thin\"><color rgb=\"FF000000\"/></right><top/><bottom style=\"thin\"><color rgb=\"FF000000\"/></bottom><diagonal/></border><border><left style=\"thin\"><color rgb=\"FFB2B2B2\"/></left><right style=\"thin\"><color rgb=\"FFB2B2B2\"/></right><top style=\"thin\"><color rgb=\"FFB2B2B2\"/></top><bottom style=\"thin\"><color rgb=\"FFB2B2B2\"/></bottom><diagonal/></border><border><left/><right/><top/><bottom style=\"medium\"><color theme=\"4\"/></bottom><diagonal/></border><border><left/><right/><top/><bottom style=\"medium\"><color theme=\"4\" tint=\"0.499984740745262\"/></bottom><diagonal/></border><border><left style=\"thin\"><color rgb=\"FF7F7F7F\"/></left><right style=\"thin\"><color rgb=\"FF7F7F7F\"/></right><top style=\"thin\"><color rgb=\"FF7F7F7F\"/></top><bottom style=\"thin\"><color rgb=\"FF7F7F7F\"/></bottom><diagonal/></border><border><left style=\"thin\"><color rgb=\"FF3F3F3F\"/></left><right style=\"thin\"><color rgb=\"FF3F3F3F\"/></right><top style=\"thin\"><color rgb=\"FF3F3F3F\"/></top><bottom style=\"thin\"><color rgb=\"FF3F3F3F\"/></bottom><diagonal/></border><border><left style=\"double\"><color rgb=\"FF3F3F3F\"/></left><right style=\"double\"><color rgb=\"FF3F3F3F\"/></right><top style=\"double\"><color rgb=\"FF3F3F3F\"/></top><bottom style=\"double\"><color rgb=\"FF3F3F3F\"/></bottom><diagonal/></border><border><left/><right/><top/><bottom style=\"double\"><color rgb=\"FFFF8001\"/></bottom><diagonal/></border><border><left/><right/><top style=\"thin\"><color theme=\"4\"/></top><bottom style=\"double\"><color theme=\"4\"/></bottom><diagonal/></border></borders><cellStyleXfs count=\"49\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/><xf numFmtId=\"176\" fontId=\"7\" fillId=\"0\" borderId=\"0\" applyFont=\"0\" applyFill=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"44\" fontId=\"7\" fillId=\"0\" borderId=\"0\" applyFont=\"0\" applyFill=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"9\" fontId=\"7\" fillId=\"0\" borderId=\"0\" applyFont=\"0\" applyFill=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"177\" fontId=\"7\" fillId=\"0\" borderId=\"0\" applyFont=\"0\" applyFill=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"42\" fontId=\"7\" fillId=\"0\" borderId=\"0\" applyFont=\"0\" applyFill=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"8\" fillId=\"0\" borderId=\"0\" applyNumberFormat=\"0\" applyFill=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"9\" fillId=\"0\" borderId=\"0\" applyNumberFormat=\"0\" applyFill=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"7\" fillId=\"10\" borderId=\"7\" applyNumberFormat=\"0\" applyFont=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"10\" fillId=\"0\" borderId=\"0\" applyNumberFormat=\"0\" applyFill=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"11\" fillId=\"0\" borderId=\"0\" applyNumberFormat=\"0\" applyFill=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"12\" fillId=\"0\" borderId=\"0\" applyNumberFormat=\"0\" applyFill=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"13\" fillId=\"0\" borderId=\"8\" applyNumberFormat=\"0\" applyFill=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"14\" fillId=\"0\" borderId=\"8\" applyNumberFormat=\"0\" applyFill=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"15\" fillId=\"0\" borderId=\"9\" applyNumberFormat=\"0\" applyFill=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"15\" fillId=\"0\" borderId=\"0\" applyNumberFormat=\"0\" applyFill=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"16\" fillId=\"11\" borderId=\"10\" applyNumberFormat=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"17\" fillId=\"12\" borderId=\"11\" applyNumberFormat=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"18\" fillId=\"12\" borderId=\"10\" applyNumberFormat=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"19\" fillId=\"13\" borderId=\"12\" applyNumberFormat=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"20\" fillId=\"0\" borderId=\"13\" applyNumberFormat=\"0\" applyFill=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"21\" fillId=\"0\" borderId=\"14\" applyNumberFormat=\"0\" applyFill=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"22\" fillId=\"14\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"23\" fillId=\"15\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"24\" fillId=\"16\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"25\" fillId=\"17\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"26\" fillId=\"18\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"26\" fillId=\"19\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"25\" fillId=\"20\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"25\" fillId=\"21\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"26\" fillId=\"22\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"26\" fillId=\"23\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"25\" fillId=\"24\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"25\" fillId=\"25\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"26\" fillId=\"26\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"26\" fillId=\"27\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"25\" fillId=\"28\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"25\" fillId=\"29\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"26\" fillId=\"30\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"26\" fillId=\"31\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"25\" fillId=\"32\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"25\" fillId=\"33\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"26\" fillId=\"34\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"26\" fillId=\"35\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"25\" fillId=\"36\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"25\" fillId=\"37\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"26\" fillId=\"38\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"26\" fillId=\"39\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"25\" fillId=\"40\" borderId=\"0\" applyNumberFormat=\"0\" applyBorder=\"0\" applyAlignment=\"0\" applyProtection=\"0\"><alignment vertical=\"center\"/></xf></cellStyleXfs><cellXfs count=\"35\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\" applyAlignment=\"1\"/><xf numFmtId=\"0\" fontId=\"1\" fillId=\"2\" borderId=\"1\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"left\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"2\" fillId=\"0\" borderId=\"2\" xfId=\"0\" applyFont=\"1\" applyBorder=\"1\"/><xf numFmtId=\"0\" fontId=\"2\" fillId=\"0\" borderId=\"3\" xfId=\"0\" applyFont=\"1\" applyBorder=\"1\"/><xf numFmtId=\"0\" fontId=\"3\" fillId=\"2\" borderId=\"0\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"3\" fillId=\"3\" borderId=\"4\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"4\" fillId=\"4\" borderId=\"4\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"5\" fillId=\"4\" borderId=\"4\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"4\" fillId=\"5\" borderId=\"4\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"5\" fillId=\"6\" borderId=\"5\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"5\" fillId=\"6\" borderId=\"6\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"5\" fillId=\"4\" borderId=\"5\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"4\" fillId=\"4\" borderId=\"4\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"5\" fillId=\"4\" borderId=\"5\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"4\" fillId=\"7\" borderId=\"4\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"4\" fillId=\"8\" borderId=\"4\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"4\" fillId=\"5\" borderId=\"4\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"5\" fillId=\"6\" borderId=\"5\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"5\" fillId=\"6\" borderId=\"6\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" vertical=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"5\" fillId=\"9\" borderId=\"4\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"4\" fillId=\"9\" borderId=\"4\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"6\" fillId=\"9\" borderId=\"4\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"/><xf numFmtId=\"0\" fontId=\"5\" fillId=\"0\" borderId=\"4\" xfId=\"0\" applyFont=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"5\" fillId=\"9\" borderId=\"4\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"6\" fillId=\"0\" borderId=\"4\" xfId=\"0\" applyFont=\"1\" applyBorder=\"1\" applyAlignment=\"1\"/><xf numFmtId=\"0\" fontId=\"4\" fillId=\"9\" borderId=\"4\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"5\" fillId=\"9\" borderId=\"5\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"5\" fillId=\"9\" borderId=\"6\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"4\" fillId=\"0\" borderId=\"4\" xfId=\"0\" applyFont=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"5\" fillId=\"0\" borderId=\"5\" xfId=\"0\" applyFont=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"5\" fillId=\"0\" borderId=\"6\" xfId=\"0\" applyFont=\"1\" applyBorder=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"4\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"5\" fillId=\"9\" borderId=\"0\" xfId=\"0\" applyFont=\"1\" applyFill=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" wrapText=\"1\"/></xf><xf numFmtId=\"0\" fontId=\"5\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\"/></xf><xf numFmtId=\"0\" fontId=\"5\" fillId=\"0\" borderId=\"0\" xfId=\"0\" applyFont=\"1\" applyAlignment=\"1\"><alignment horizontal=\"center\" wrapText=\"1\"/></xf></cellXfs><cellStyles count=\"49\"><cellStyle name=\"Normal\" xfId=\"0\" builtinId=\"0\"/><cellStyle name=\"Comma\" xfId=\"1\" builtinId=\"3\"/><cellStyle name=\"Currency\" xfId=\"2\" builtinId=\"4\"/><cellStyle name=\"Percent\" xfId=\"3\" builtinId=\"5\"/><cellStyle name=\"Comma [0]\" xfId=\"4\" builtinId=\"6\"/><cellStyle name=\"Currency [0]\" xfId=\"5\" builtinId=\"7\"/><cellStyle name=\"Link\" xfId=\"6\" builtinId=\"8\"/><cellStyle name=\"Followed Hyperlink\" xfId=\"7\" builtinId=\"9\"/><cellStyle name=\"Note\" xfId=\"8\" builtinId=\"10\"/><cellStyle name=\"Warning Text\" xfId=\"9\" builtinId=\"11\"/><cellStyle name=\"Title\" xfId=\"10\" builtinId=\"15\"/><cellStyle name=\"Explanatory Text\" xfId=\"11\" builtinId=\"53\"/><cellStyle name=\"Heading 1\" xfId=\"12\" builtinId=\"16\"/><cellStyle name=\"Heading 2\" xfId=\"13\" builtinId=\"17\"/><cellStyle name=\"Heading 3\" xfId=\"14\" builtinId=\"18\"/><cellStyle name=\"Heading 4\" xfId=\"15\" builtinId=\"19\"/><cellStyle name=\"Input\" xfId=\"16\" builtinId=\"20\"/><cellStyle name=\"Output\" xfId=\"17\" builtinId=\"21\"/><cellStyle name=\"Calculation\" xfId=\"18\" builtinId=\"22\"/><cellStyle name=\"Check Cell\" xfId=\"19\" builtinId=\"23\"/><cellStyle name=\"Linked Cell\" xfId=\"20\" builtinId=\"24\"/><cellStyle name=\"Total\" xfId=\"21\" builtinId=\"25\"/><cellStyle name=\"Good\" xfId=\"22\" builtinId=\"26\"/><cellStyle name=\"Bad\" xfId=\"23\" builtinId=\"27\"/><cellStyle name=\"Neutral\" xfId=\"24\" builtinId=\"28\"/><cellStyle name=\"Accent1\" xfId=\"25\" builtinId=\"29\"/><cellStyle name=\"20% - Accent1\" xfId=\"26\" builtinId=\"30\"/><cellStyle name=\"40% - Accent1\" xfId=\"27\" builtinId=\"31\"/><cellStyle name=\"60% - Accent1\" xfId=\"28\" builtinId=\"32\"/><cellStyle name=\"Accent2\" xfId=\"29\" builtinId=\"33\"/><cellStyle name=\"20% - Accent2\" xfId=\"30\" builtinId=\"34\"/><cellStyle name=\"40% - Accent2\" xfId=\"31\" builtinId=\"35\"/><cellStyle name=\"60% - Accent2\" xfId=\"32\" builtinId=\"36\"/><cellStyle name=\"Accent3\" xfId=\"33\" builtinId=\"37\"/><cellStyle name=\"20% - Accent3\" xfId=\"34\" builtinId=\"38\"/><cellStyle name=\"40% - Accent3\" xfId=\"35\" builtinId=\"39\"/><cellStyle name=\"60% - Accent3\" xfId=\"36\" builtinId=\"40\"/><cellStyle name=\"Accent4\" xfId=\"37\" builtinId=\"41\"/><cellStyle name=\"20% - Accent4\" xfId=\"38\" builtinId=\"42\"/><cellStyle name=\"40% - Accent4\" xfId=\"39\" builtinId=\"43\"/><cellStyle name=\"60% - Accent4\" xfId=\"40\" builtinId=\"44\"/><cellStyle name=\"Accent5\" xfId=\"41\" builtinId=\"45\"/><cellStyle name=\"20% - Accent5\" xfId=\"42\" builtinId=\"46\"/><cellStyle name=\"40% - Accent5\" xfId=\"43\" builtinId=\"47\"/><cellStyle name=\"60% - Accent5\" xfId=\"44\" builtinId=\"48\"/><cellStyle name=\"Accent6\" xfId=\"45\" builtinId=\"49\"/><cellStyle name=\"20% - Accent6\" xfId=\"46\" builtinId=\"50\"/><cellStyle name=\"40% - Accent6\" xfId=\"47\" builtinId=\"51\"/><cellStyle name=\"60% - Accent6\" xfId=\"48\" builtinId=\"52\"/></cellStyles><dxfs count=\"18\"><dxf><fill><patternFill patternType=\"solid\"><fgColor rgb=\"FFDD7E6B\"/><bgColor rgb=\"FFDD7E6B\"/></patternFill></fill></dxf><dxf><fill><patternFill patternType=\"solid\"><fgColor theme=\"4\" tint=\"0.799981688894314\"/><bgColor theme=\"4\" tint=\"0.799981688894314\"/></patternFill></fill></dxf><dxf><fill><patternFill patternType=\"solid\"><fgColor theme=\"4\" tint=\"0.799981688894314\"/><bgColor theme=\"4\" tint=\"0.799981688894314\"/></patternFill></fill></dxf><dxf><font><b val=\"1\"/><color theme=\"1\"/></font></dxf><dxf><font><b val=\"1\"/><color theme=\"1\"/></font></dxf><dxf><font><b val=\"1\"/><color theme=\"1\"/></font><border><top style=\"double\"><color theme=\"4\"/></top></border></dxf><dxf><font><b val=\"1\"/><color theme=\"0\"/></font><fill><patternFill patternType=\"solid\"><fgColor theme=\"4\"/><bgColor theme=\"4\"/></patternFill></fill></dxf><dxf><font><color theme=\"1\"/></font><border><left style=\"thin\"><color theme=\"4\"/></left><right style=\"thin\"><color theme=\"4\"/></right><top style=\"thin\"><color theme=\"4\"/></top><bottom style=\"thin\"><color theme=\"4\"/></bottom><horizontal style=\"thin\"><color theme=\"4\" tint=\"0.399975585192419\"/></horizontal></border></dxf><dxf><fill><patternFill patternType=\"solid\"><fgColor theme=\"4\" tint=\"0.799981688894314\"/><bgColor theme=\"4\" tint=\"0.799981688894314\"/></patternFill></fill><border><bottom style=\"thin\"><color theme=\"4\" tint=\"0.399975585192419\"/></bottom></border></dxf><dxf><font><b val=\"1\"/></font><fill><patternFill patternType=\"solid\"><fgColor theme=\"4\" tint=\"0.799981688894314\"/><bgColor theme=\"4\" tint=\"0.799981688894314\"/></patternFill></fill><border><bottom style=\"thin\"><color theme=\"4\" tint=\"0.399975585192419\"/></bottom></border></dxf><dxf><font><color theme=\"1\"/></font></dxf><dxf><font><color theme=\"1\"/></font><border><bottom style=\"thin\"><color theme=\"4\" tint=\"0.399975585192419\"/></bottom></border></dxf><dxf><font><b val=\"1\"/><color theme=\"1\"/></font></dxf><dxf><font><b val=\"1\"/><color theme=\"1\"/></font><border><top style=\"thin\"><color theme=\"4\"/></top><bottom style=\"thin\"><color theme=\"4\"/></bottom></border></dxf><dxf><fill><patternFill patternType=\"solid\"><fgColor theme=\"4\" tint=\"0.799981688894314\"/><bgColor theme=\"4\" tint=\"0.799981688894314\"/></patternFill></fill></dxf><dxf><fill><patternFill patternType=\"solid\"><fgColor theme=\"4\" tint=\"0.799981688894314\"/><bgColor theme=\"4\" tint=\"0.799981688894314\"/></patternFill></fill></dxf><dxf><font><b val=\"1\"/><color theme=\"1\"/></font><fill><patternFill patternType=\"solid\"><fgColor theme=\"4\" tint=\"0.799981688894314\"/><bgColor theme=\"4\" tint=\"0.799981688894314\"/></patternFill></fill><border><top style=\"thin\"><color theme=\"4\" tint=\"0.399975585192419\"/></top><bottom style=\"thin\"><color theme=\"4\" tint=\"0.399975585192419\"/></bottom></border></dxf><dxf><font><b val=\"1\"/><color theme=\"1\"/></font><fill><patternFill patternType=\"solid\"><fgColor theme=\"4\" tint=\"0.799981688894314\"/><bgColor theme=\"4\" tint=\"0.799981688894314\"/></patternFill></fill><border><bottom style=\"thin\"><color theme=\"4\" tint=\"0.399975585192419\"/></bottom></border></dxf></dxfs><tableStyles count=\"2\" defaultTableStyle=\"TableStylePreset3_Accent1\" defaultPivotStyle=\"PivotStylePreset2_Accent1\"><tableStyle name=\"TableStylePreset3_Accent1\" pivot=\"0\" count=\"7\" xr9:uid=\"{59DB682C-5494-4EDE-A608-00C9E5F0F923}\"><tableStyleElement type=\"wholeTable\" dxfId=\"7\"/><tableStyleElement type=\"headerRow\" dxfId=\"6\"/><tableStyleElement type=\"totalRow\" dxfId=\"5\"/><tableStyleElement type=\"firstColumn\" dxfId=\"4\"/><tableStyleElement type=\"lastColumn\" dxfId=\"3\"/><tableStyleElement type=\"firstRowStripe\" dxfId=\"2\"/><tableStyleElement type=\"firstColumnStripe\" dxfId=\"1\"/></tableStyle><tableStyle name=\"PivotStylePreset2_Accent1\" table=\"0\" count=\"10\" xr9:uid=\"{267968C8-6FFD-4C36-ACC1-9EA1FD1885CA}\"><tableStyleElement type=\"headerRow\" dxfId=\"17\"/><tableStyleElement type=\"totalRow\" dxfId=\"16\"/><tableStyleElement type=\"firstRowStripe\" dxfId=\"15\"/><tableStyleElement type=\"firstColumnStripe\" dxfId=\"14\"/><tableStyleElement type=\"firstSubtotalRow\" dxfId=\"13\"/><tableStyleElement type=\"secondSubtotalRow\" dxfId=\"12\"/><tableStyleElement type=\"firstRowSubheading\" dxfId=\"11\"/><tableStyleElement type=\"secondRowSubheading\" dxfId=\"10\"/><tableStyleElement type=\"pageFieldLabels\" dxfId=\"9\"/><tableStyleElement type=\"pageFieldValues\" dxfId=\"8\"/></tableStyle></tableStyles><extLst><ext uri=\"{EB79DEF2-80B8-43e5-95BD-54CBDDF9020C}\" xmlns:x14=\"http://schemas.microsoft.com/office/spreadsheetml/2009/9/main\"><x14:slicerStyles defaultSlicerStyle=\"SlicerStyleLight1\"/></ext></extLst></styleSheet>",
+  "theme": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\r\n<a:theme xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" name=\"Sheets\"><a:themeElements><a:clrScheme name=\"Sheets\"><a:dk1><a:srgbClr val=\"000000\"/></a:dk1><a:lt1><a:srgbClr val=\"FFFFFF\"/></a:lt1><a:dk2><a:srgbClr val=\"000000\"/></a:dk2><a:lt2><a:srgbClr val=\"FFFFFF\"/></a:lt2><a:accent1><a:srgbClr val=\"4285F4\"/></a:accent1><a:accent2><a:srgbClr val=\"FF0000\"/></a:accent2><a:accent3><a:srgbClr val=\"FBBC04\"/></a:accent3><a:accent4><a:srgbClr val=\"34A853\"/></a:accent4><a:accent5><a:srgbClr val=\"FF6D01\"/></a:accent5><a:accent6><a:srgbClr val=\"46BDC6\"/></a:accent6><a:hlink><a:srgbClr val=\"1155CC\"/></a:hlink><a:folHlink><a:srgbClr val=\"1155CC\"/></a:folHlink></a:clrScheme><a:fontScheme name=\"Sheets\"><a:majorFont><a:latin typeface=\"Arial\"/><a:ea typeface=\"Arial\"/><a:cs typeface=\"Arial\"/></a:majorFont><a:minorFont><a:latin typeface=\"Arial\"/><a:ea typeface=\"Arial\"/><a:cs typeface=\"Arial\"/></a:minorFont></a:fontScheme><a:fmtScheme name=\"Office\"><a:fillStyleLst><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill><a:gradFill rotWithShape=\"1\"><a:gsLst><a:gs pos=\"0\"><a:schemeClr val=\"phClr\"><a:lumMod val=\"110000\"/><a:satMod val=\"105000\"/><a:tint val=\"67000\"/></a:schemeClr></a:gs><a:gs pos=\"50000\"><a:schemeClr val=\"phClr\"><a:lumMod val=\"105000\"/><a:satMod val=\"103000\"/><a:tint val=\"73000\"/></a:schemeClr></a:gs><a:gs pos=\"100000\"><a:schemeClr val=\"phClr\"><a:lumMod val=\"105000\"/><a:satMod val=\"109000\"/><a:tint val=\"81000\"/></a:schemeClr></a:gs></a:gsLst><a:lin ang=\"5400000\" scaled=\"0\"/></a:gradFill><a:gradFill rotWithShape=\"1\"><a:gsLst><a:gs pos=\"0\"><a:schemeClr val=\"phClr\"><a:satMod val=\"103000\"/><a:lumMod val=\"102000\"/><a:tint val=\"94000\"/></a:schemeClr></a:gs><a:gs pos=\"50000\"><a:schemeClr val=\"phClr\"><a:satMod val=\"110000\"/><a:lumMod val=\"100000\"/><a:shade val=\"100000\"/></a:schemeClr></a:gs><a:gs pos=\"100000\"><a:schemeClr val=\"phClr\"><a:lumMod val=\"99000\"/><a:satMod val=\"120000\"/><a:shade val=\"78000\"/></a:schemeClr></a:gs></a:gsLst><a:lin ang=\"5400000\" scaled=\"0\"/></a:gradFill></a:fillStyleLst><a:lnStyleLst><a:ln w=\"6350\" cap=\"flat\" cmpd=\"sng\" algn=\"ctr\"><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill><a:prstDash val=\"solid\"/><a:miter lim=\"800000\"/></a:ln><a:ln w=\"12700\" cap=\"flat\" cmpd=\"sng\" algn=\"ctr\"><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill><a:prstDash val=\"solid\"/><a:miter lim=\"800000\"/></a:ln><a:ln w=\"19050\" cap=\"flat\" cmpd=\"sng\" algn=\"ctr\"><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill><a:prstDash val=\"solid\"/><a:miter lim=\"800000\"/></a:ln></a:lnStyleLst><a:effectStyleLst><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst/></a:effectStyle><a:effectStyle><a:effectLst><a:outerShdw blurRad=\"57150\" dist=\"19050\" dir=\"5400000\" algn=\"ctr\" rotWithShape=\"0\"><a:srgbClr val=\"000000\"><a:alpha val=\"63000\"/></a:srgbClr></a:outerShdw></a:effectLst></a:effectStyle></a:effectStyleLst><a:bgFillStyleLst><a:solidFill><a:schemeClr val=\"phClr\"/></a:solidFill><a:solidFill><a:schemeClr val=\"phClr\"><a:tint val=\"95000\"/><a:satMod val=\"170000\"/></a:schemeClr></a:solidFill><a:gradFill rotWithShape=\"1\"><a:gsLst><a:gs pos=\"0\"><a:schemeClr val=\"phClr\"><a:tint val=\"93000\"/><a:satMod val=\"150000\"/><a:shade val=\"98000\"/><a:lumMod val=\"102000\"/></a:schemeClr></a:gs><a:gs pos=\"50000\"><a:schemeClr val=\"phClr\"><a:tint val=\"98000\"/><a:satMod val=\"130000\"/><a:shade val=\"90000\"/><a:lumMod val=\"103000\"/></a:schemeClr></a:gs><a:gs pos=\"100000\"><a:schemeClr val=\"phClr\"><a:shade val=\"63000\"/><a:satMod val=\"120000\"/></a:schemeClr></a:gs></a:gsLst><a:lin ang=\"5400000\" scaled=\"0\"/></a:gradFill></a:bgFillStyleLst></a:fmtScheme></a:themeElements><a:objectDefaults/></a:theme>"
+}
