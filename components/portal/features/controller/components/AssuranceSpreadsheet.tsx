@@ -10,17 +10,19 @@ import PlainTextCell from './PlainTextCell';
 import {useDeliveryGrid,type ServerDraft} from './useDeliveryGrid';
 import {protectedGridFields} from '@/lib/services/assurance-tickets/grid-values';
 
-export default function AssuranceSpreadsheet({projectId,userId}:{projectId:string;userId:string}){
- const meta=useQuery({queryKey:['assurance-metadata',userId],queryFn:()=>api<{fields:Field[];technicians:Array<{id:string;full_name:string}>}>('/assurance-tickets/metadata')});
- const records=useQuery({queryKey:['assurance-tickets',userId,projectId],queryFn:()=>api<Ticket[]>(`/assurance-tickets?project_id=${projectId}`)});
- const drafts=useQuery({queryKey:['delivery-grid-drafts',userId,projectId],queryFn:()=>api<ServerDraft[]>(`/assurance-tickets/grid?project_id=${projectId}`)});
+export default function AssuranceSpreadsheet({projectId,userId,serviceAssurance=false}:{projectId:string;userId:string;serviceAssurance?:boolean}){
+ const base=serviceAssurance?'/service-assurance':'/assurance-tickets';
+ const meta=useQuery({queryKey:serviceAssurance?[base,'metadata',userId]:['assurance-metadata',userId],queryFn:()=>api<{fields:Field[];technicians:Array<{id:string;full_name:string}>}>(`${base}/metadata`)});
+ const records=useQuery({queryKey:serviceAssurance?[base,userId,projectId]:['assurance-tickets',userId,projectId],queryFn:()=>api<Ticket[]>(`${base}?project_id=${projectId}`)});
+ const drafts=useQuery({queryKey:serviceAssurance?[base,'grid-drafts',userId,projectId]:['delivery-grid-drafts',userId,projectId],queryFn:()=>api<ServerDraft[]>(`${base}/grid?project_id=${projectId}`)});
  const [refreshKey,setRefreshKey]=useState(0);
- if(meta.isPending||records.isPending||drafts.isPending)return <p>Loading Service Delivery...</p>;
+ if(meta.isPending||records.isPending||drafts.isPending)return <p>Loading {serviceAssurance?'Service Assurance':'Service Delivery'}...</p>;
  if(meta.error||records.error||drafts.error)return <p role="alert">{meta.error?.message||records.error?.message||drafts.error?.message}</p>;
- return <DeliveryGrid key={`${projectId}:${userId}:${refreshKey}`} projectId={projectId} userId={userId} fields={meta.data!.fields} technicians={meta.data!.technicians} tickets={records.data!} drafts={drafts.data!} refresh={async()=>{await Promise.all([records.refetch(),drafts.refetch()]);setRefreshKey(v=>v+1);}}/>;
+ return <DeliveryGrid key={`${projectId}:${userId}:${refreshKey}`} projectId={projectId} userId={userId} serviceAssurance={serviceAssurance} fields={meta.data!.fields} technicians={meta.data!.technicians} tickets={records.data!} drafts={drafts.data!} refresh={async()=>{await Promise.all([records.refetch(),drafts.refetch()]);setRefreshKey(v=>v+1);}}/>;
 }
-function DeliveryGrid({projectId,userId,fields,technicians,tickets,drafts,refresh}:{projectId:string;userId:string;fields:Field[];technicians:Array<{id:string;full_name:string}>;tickets:Ticket[];drafts:ServerDraft[];refresh:()=>Promise<void>}){
- const grid=useDeliveryGrid(projectId,userId,fields,tickets,drafts,technicians);
+function DeliveryGrid({projectId,userId,serviceAssurance,fields,technicians,tickets,drafts,refresh}:{projectId:string;userId:string;serviceAssurance:boolean;fields:Field[];technicians:Array<{id:string;full_name:string}>;tickets:Ticket[];drafts:ServerDraft[];refresh:()=>Promise<void>}){
+ const grid=useDeliveryGrid(projectId,userId,fields,tickets,drafts,technicians,serviceAssurance?{manual:true,recordsPath:'/service-assurance',gridPath:'/service-assurance/grid'}:{});
+ const title=serviceAssurance?'Service Assurance':'Service Delivery';
  const [page,setPage]=useState(0),[review,setReview]=useState<string|null>(null);
  const table=useRef<HTMLTableElement>(null),tabStart=useRef<number|null>(null);
  const [notice,setNotice]=useState('');
@@ -45,21 +47,21 @@ function DeliveryGrid({projectId,userId,fields,technicians,tickets,drafts,refres
  function add(){const index=grid.add();setPage(Math.floor(index/25));requestAnimationFrame(()=>table.current?.querySelector<HTMLElement>(`[data-cell="${index}:0"]`)?.focus());}
  const pending=grid.rows.filter(r=>r.pending.length).length;
  return <div className="space-y-3">
- <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-h4 font-semibold">Service Delivery</h2><p className="text-sm text-neutral-500">{grid.rows.length} rows · Dates/times: Bahrain · <span role="status">{pending?`${pending} rows saving or waiting to retry`:'All committed changes saved'}</span></p></div>
- <div className="flex flex-wrap gap-2"><ShortcutsGuide userId={userId}/><Button onClick={add}>Add row</Button><Button variant="outline" onClick={()=>{if(pending){grid.retry();setNotice('');}else void refresh();}}>Refresh</Button><Button variant="ghost" onClick={grid.exportDraft}>Export draft</Button></div></div>
- <p className="text-xs text-neutral-500">Type to replace a selected cell; F2 or double-click to edit. Enter or Tab commits and saves automatically. Exact typed text is retained. Only valid Resolved rows with a Team become technician Todo tasks.</p>
+ <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-h4 font-semibold">{title}</h2><p className="text-sm text-neutral-500">{grid.rows.length} rows · Dates/times: Bahrain · <span role="status">{pending?`${pending} rows ${serviceAssurance?'awaiting submission':'saving or waiting to retry'}`:'All committed changes saved'}</span></p></div>
+ <div className="flex flex-wrap gap-2">{!serviceAssurance&&<ShortcutsGuide userId={userId}/>} {serviceAssurance&&<Button disabled={grid.rows.some(r=>r.state==='saving')} onClick={grid.retry}>Submit rows</Button>}<Button onClick={add}>Add row</Button><Button variant="outline" onClick={()=>{if(pending){if(serviceAssurance)setNotice('Submit your changes before refreshing.');else{grid.retry();setNotice('');}}else void refresh();}}>Refresh</Button><Button variant="ghost" onClick={grid.exportDraft}>Export draft</Button></div></div>
+ <p className="text-xs text-neutral-500">{serviceAssurance?'Type to replace a cell; F2 or double-click to edit. Enter or Tab commits locally; Submit rows saves changes to the database. Only resolved rows with both ONT serial numbers need a technician response. Choose Team to assign the response. Assigned-date filters accept YYYY-MM-DD or DD/MM/YYYY with optional HH:mm (Bahrain).':'Type to replace a selected cell; F2 or double-click to edit. Enter or Tab commits and saves automatically. Exact typed text is retained. Only valid Resolved rows with a Team become technician Todo tasks.'}</p>
  {!technicians.length&&<p className="text-sm text-warning-700">No active Technicians are configured. An Admin must add one before a task can be assigned.</p>}
  {grid.error&&<p role="alert" className="text-danger-600">{grid.error}</p>}{notice&&<p role="status">{notice}</p>}
  {grid.hasRecovery&&<div className="text-sm">Uncommitted text from a previous visit is available. <Button variant="outline" onClick={grid.recover}>Restore uncommitted text</Button></div>}
- <Card padding="none" className="overflow-hidden"><div className="max-h-[65vh] overflow-auto"><table ref={table} className="border-collapse text-sm" aria-label="Service Delivery spreadsheet"><thead className="sticky top-0 z-20 bg-neutral-100 dark:bg-neutral-800"><tr><th className="sticky left-0 z-30 min-w-44 bg-neutral-100 p-2 dark:bg-neutral-800">Row</th>{fields.map(f=><th key={f.key} className="min-w-48 border border-neutral-200 p-2 text-left dark:border-neutral-700"><span className="text-xs text-neutral-400">{f.excelColumn} </span>{f.label}</th>)}</tr></thead><tbody>
+ <Card padding="none" className="overflow-hidden"><div className="max-h-[65vh] overflow-auto"><table ref={table} className="border-collapse text-sm" aria-label={`${title} spreadsheet`}><thead className="sticky top-0 z-20 bg-neutral-100 dark:bg-neutral-800"><tr><th className="sticky left-0 z-30 min-w-44 bg-neutral-100 p-2 dark:bg-neutral-800">Row</th>{fields.map(f=><th key={f.key} className="min-w-48 border border-neutral-200 p-2 text-left dark:border-neutral-700"><span className="text-xs text-neutral-400">{f.excelColumn} </span>{f.label}</th>)}</tr></thead><tbody>
  {visible.map((row,rowIndex)=>{const index=page*25+rowIndex;return <tr key={row.id}><td className={`sticky left-0 z-10 border border-l-4 bg-white p-2 dark:bg-neutral-900 ${row.state==='record'?'border-l-emerald-500':'border-l-amber-400'}`}><span>{index+1} · {row.state==='record'?'Saved':row.state==='saving'?'Saving…':row.state==='pending'?'Pending':'Draft'}</span>{(row.errors._row||row.errors._save)&&<div className="max-w-48 text-xs text-danger-600">{row.errors._row||row.errors._save}<button className="block underline" onClick={async()=>{try{if(await grid.loadReview(row.id))setReview(row.id);}catch(e){setNotice((e as Error).message);}}}>Review draft</button></div>}</td>
- {fields.map((f,colIndex)=>{const protectedCell=protectedGridFields.has(f.key);let value=row.values[f.key]??'';
- if(f.key==='controller_id')value=String(row.record?.controller_name||'You');
- if(f.key==='sla_from_creation')value=row.record?.sla_from_creation!=null?`${(Number(row.record.sla_from_creation)*24).toFixed(2)} h`:'';
- if(f.key==='kpi_status')value=String(row.record?.kpi_status||'');
+ {fields.map((f,colIndex)=>{const protectedCell=!serviceAssurance&&protectedGridFields.has(f.key);let value=row.values[f.key]??'';
+ if(!serviceAssurance&&f.key==='controller_id')value=String(row.record?.controller_name||'You');
+ if(!serviceAssurance&&f.key==='sla_from_creation')value=row.record?.sla_from_creation!=null?`${(Number(row.record.sla_from_creation)*24).toFixed(2)} h`:'';
+ if(!serviceAssurance&&f.key==='kpi_status')value=String(row.record?.kpi_status||'');
  return <td key={f.key} className={`relative border border-neutral-200 dark:border-neutral-700 ${row.state==='draft'?'bg-warning-50/40 dark:bg-warning-950/10':''}`}>
  {protectedCell&&<Lock aria-hidden="true" className="absolute right-1 top-1 h-3 w-3 text-neutral-400"/>}{row.errors[f.key]&&<span title={row.errors[f.key]} className="absolute right-0 top-0 h-0 w-0 border-l-[8px] border-t-[8px] border-l-transparent border-t-red-500"/>}
- <PlainTextCell value={value} label={`${f.label}, row ${index+1}`} cell={`${index}:${colIndex}`} readOnly={protectedCell} error={row.errors[f.key]} onCommit={value=>grid.commit(row.id,f.key,value)} onCache={value=>grid.cache(row.id,f.key,value)} onSelect={()=>{tabStart.current=null;}} onMove={(key,shift)=>move(index,colIndex,key,shift)}/>
+ {serviceAssurance&&f.key==='team'?<select aria-label={`Team, row ${index+1}`} data-cell={`${index}:${colIndex}`} value={value} className="block min-w-48 border-0 bg-transparent p-2 text-sm focus:ring-2 focus:ring-primary-500" onPointerDown={()=>{tabStart.current=null;}} onChange={e=>grid.commit(row.id,f.key,e.target.value)} onKeyDown={e=>{if(e.key==='Tab'||e.key==='Enter'){e.preventDefault();move(index,colIndex,e.key,e.shiftKey);}}}><option value="">Select Team</option>{value&&!technicians.some(t=>t.id===value)&&<option value={value}>Previous Team (inactive)</option>}{technicians.map(t=><option key={t.id} value={t.id}>{t.full_name}</option>)}</select>:<PlainTextCell value={value} label={`${f.label}, row ${index+1}`} cell={`${index}:${colIndex}`} readOnly={protectedCell} error={row.errors[f.key]} onCommit={value=>grid.commit(row.id,f.key,value)} onCache={value=>grid.cache(row.id,f.key,value)} onSelect={()=>{tabStart.current=null;}} onMove={(key,shift)=>move(index,colIndex,key,shift)}/>}
  </td>;})}</tr>;})}
  {!grid.rows.length&&<tr><td colSpan={fields.length+1} className="p-8">No records yet. Add a row to begin.</td></tr>}
  </tbody></table></div></Card>

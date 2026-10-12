@@ -2,10 +2,40 @@ import {describe,it,expect,afterAll} from 'vitest';
 import {db,getPool} from '@/lib/db';
 import {MaterialInventory} from '@/lib/services/material-inventory';
 import {InventoryRequests} from '@/lib/services/inventory-requests';
+import {ServiceAssurance} from '@/lib/services/service-assurance';
+import {filterAssuranceAudit} from '@/lib/service-assurance-rules';
 import {randomUUID} from 'node:crypto';
 import {DeliveryGridService} from '@/lib/services/assurance-tickets/delivery-grid.service';
 import {getProjectsService,getOperationsDatabase,getProjectAuditService,getStaffService,getServiceDeliveryService} from '@/lib/services/registry';
 describe('Existing Supabase database (read only)',()=>{
+ it('Service Assurance replacement rows move from not filled to submitted once (rolled back)',async()=>{
+  await expect(db.transaction(async tx=>{
+   const service=new ServiceAssurance({query:tx.query.bind(tx),transaction:async fn=>fn(tx)} as typeof db);
+   const [project]=await tx.query("SELECT id FROM projects WHERE code='SERVICE_DELIVERY'");
+   const [controller]=await tx.query("SELECT id FROM profiles WHERE role='controller' AND is_active LIMIT 1");
+   const [technician]=await tx.query("SELECT id FROM profiles WHERE role='technician' AND is_active LIMIT 1");
+   const manager={userId:controller.id,role:'controller'},actor={userId:technician.id,role:'technician'};
+   const id=randomUUID(),resetId=randomUUID();
+   const values={ticket_number:'00-test-'+id,team:technician.id,assigned_datetime:'01/04/2026 00:15',status:' ReSoLvEd ',old_serial:' OLD-001 ',new_serial:' NEW-002 ',mobile:'001234'};
+   const saved=await service.save({id,project_id:project.id,mutation_id:randomUUID(),base_version:null,values},manager);
+   await service.save({id:resetId,project_id:project.id,mutation_id:randomUUID(),base_version:null,values:{...values,ticket_number:'reset-'+id,old_serial:'',new_serial:'',resolution:'Network reset'}},manager);
+   const own=()=>service.audit(project.id).then(rows=>rows.filter(r=>r.id===id||r.id===resetId));
+   let audit=await own();
+   expect(audit.map(r=>r.id)).toEqual([id]);
+   expect(audit[0].assigned_date).toBe('2026-04-01');
+   expect(filterAssuranceAudit(audit,'','','','all').counts).toEqual({all:1,submitted:0,unfilled:1});
+   expect((await service.tasks(actor)).filter(r=>r.id===id||r.id===resetId).map(r=>r.id)).toEqual([id]);
+   await expect(service.submit(id,{version:saved.record.version,values:{Ticket_Number:'Not an answer',Actions_Taken:' '}},actor)).rejects.toThrow('at least one response');
+   expect(filterAssuranceAudit(await own(),'','','','unfilled').rows).toHaveLength(1);
+   await service.submit(id,{version:saved.record.version,values:{Actions_Taken:'Replaced ONT'}},actor);
+   await expect(service.submit(id,{version:saved.record.version,values:{Actions_Taken:'Duplicate'}},actor)).rejects.toThrow('already been submitted');
+   audit=await own();
+   expect(filterAssuranceAudit(audit,'2026-04-01','2026-04-01','old-001','submitted').counts).toEqual({all:1,submitted:1,unfilled:0});
+   expect((await service.form(id,actor)).values.Ticket_Number).toBe(values.ticket_number);
+   expect(await tx.query('SELECT row_id FROM service_assurance_responses WHERE row_id=$1',[id])).toHaveLength(1);
+   throw new Error('service assurance rollback');
+  })).rejects.toThrow('service assurance rollback');
+ },120000);
  it('inventory requests validate, deduct batches atomically and deduplicate retries (rolled back)',async()=>{
   await expect(db.transaction(async tx=>{
    const connection={query:tx.query.bind(tx),transaction:async fn=>fn(tx)} as typeof db;

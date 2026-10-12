@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {useSearchParams,useRouter,usePathname} from 'next/navigation';
 import { api } from '../../assurance/api';
 import { Button } from '../../../components/Button';
+import ServiceAssuranceAudit from '../components/ServiceAssuranceAudit';
 import { Table, type Column } from '../../../components/Table';
 
 type Project={id:string;name:string;code:string};
@@ -24,7 +25,7 @@ export default function Audit(){
  return <div className="space-y-4"><h1 className="text-h2 font-semibold">Audit</h1>
  {projects.error&&<p role="alert">{projects.error.message}</p>}{projects.isPending&&<p>Loading projects…</p>}
  <div role="tablist" aria-label="Audit projects" className="flex gap-2 overflow-x-auto border-b pb-2 dark:border-neutral-700">{list.map(p=><button role="tab" aria-selected={p.id===project?.id} key={p.id} onClick={()=>setParams({project:p.id})} className={`shrink-0 rounded-lg px-4 py-2 ${p.id===project?.id?'bg-primary-600 text-white':'bg-neutral-100 dark:bg-neutral-800'}`}>{p.name}</button>)}</div>
- {project?.code==='SERVICE_ASSURANCE'&&<ProjectAudit key={project.id} project={project}/>}{!projects.isPending&&!project&&<p>No projects configured.</p>}
+ {project?.code==='SERVICE_ASSURANCE'&&<ProjectAudit key={project.id} project={project}/>}{project?.code==='SERVICE_DELIVERY'&&<ServiceAssuranceAudit key={project.id} projectId={project.id}/>} {!projects.isPending&&!project&&<p>No projects configured.</p>}
  </div>;
 }
 function ProjectAudit({project}:{project:Project}){
