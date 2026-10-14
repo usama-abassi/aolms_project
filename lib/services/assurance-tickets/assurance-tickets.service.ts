@@ -1,4 +1,5 @@
 import 'server-only';
+import {norm,orderValues} from '../service-delivery/model';
 import {BadRequestException,ConflictException,ForbiddenException,NotFoundException} from '@/lib/http';
 import {Database as DataSource,Database as EntityManager} from '@/lib/db';
 
@@ -32,7 +33,7 @@ export class AssuranceTicketsService {
   }
 
   async findAll(actor: Actor, projectId?: string) {
-    if (actor.role === 'technician') return this.db.query(`${joinedTicket} WHERE t.technician_id=$1 AND t.status='Resolved' ORDER BY t.updated_at DESC`, [actor.userId]);
+    if (actor.role === 'technician') return this.db.query(`${joinedTicket} WHERE t.technician_id=$1 AND (CASE WHEN t.spreadsheet_fields->'delivery' IS NOT NULL THEN lower(trim(t.spreadsheet_fields->'delivery'->>'actioned'))='delivered' ELSE t.status='Resolved' END) ORDER BY t.updated_at DESC`, [actor.userId]);
     managerOnly(actor);
     return this.db.query(`${joinedTicket} WHERE ($1::uuid IS NULL OR t.project_id=$1) ORDER BY t.updated_at DESC`, [projectId ? uuid(projectId) : null]);
   }
@@ -42,7 +43,7 @@ export class AssuranceTicketsService {
     if (!ticket) throw new NotFoundException('Ticket not found');
     if (actor.role === 'technician') {
       const [history] = await this.db.query('SELECT id FROM assurance_submissions WHERE ticket_id=$1 AND technician_id=$2 AND submitted_at IS NOT NULL', [id, actor.userId]);
-      if (!(ticket.technician_id === actor.userId && ticket.status === 'Resolved') && !history) throw new ForbiddenException('This ticket is not assigned to you');
+      if (!(ticket.technician_id === actor.userId && norm(orderValues(ticket).actioned) === 'delivered') && !history) throw new ForbiddenException('This ticket is not assigned to you');
     } else managerOnly(actor);
     return ticket;
   }
@@ -66,6 +67,7 @@ export class AssuranceTicketsService {
     const id = uuid(row.id), mutation = uuid(row.mutation_id);
     await em.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [id]);
     const [old] = await em.query('SELECT * FROM assurance_tickets WHERE id=$1 FOR UPDATE', [id]);
+    if (old?.spreadsheet_fields?.delivery) throw new BadRequestException('Use the Service Delivery spreadsheet to edit this order');
     if (old?.last_mutation_id === mutation) return old; // Retry after a lost response.
     if (old ? row.base_version !== old.version : row.base_version != null) throw new ConflictException(`Ticket ${old?.ticket_number || id} changed on the server. Review the latest row before saving.`);
     const projectId = uuid(row.project_id);

@@ -1,4 +1,5 @@
 import 'server-only';
+import {norm,orderValues} from '../service-delivery/model';
 import {BadRequestException,ConflictException,ForbiddenException,NotFoundException} from '@/lib/http';
 import {Database as DataSource} from '@/lib/db';
 import { Actor, assuranceFields, managerOnly, uuid, translateDatabaseError } from '../assurance-tickets/assurance-tickets.service';
@@ -9,7 +10,7 @@ export function withinWindow(submittedAt: string | Date | null, now = Date.now()
 }
 export function canEdit(ticket: any, submission: any, actor: Actor, now = Date.now()) {
   if (['admin','controller'].includes(actor.role)) return true;
-  return actor.role === 'technician' && ticket.technician_id === actor.userId && ticket.status === 'Resolved'
+  return actor.role === 'technician' && ticket.technician_id === actor.userId && norm(orderValues(ticket).actioned) === 'delivered'
     && (!submission || submission.technician_id === actor.userId)
     && submission?.status !== 'locked' && withinWindow(submission?.submitted_at, now);
 }
@@ -24,13 +25,13 @@ export class AssuranceSubmissionsService {
     const rows = await this.db.query(`SELECT t.id,t.ticket_number,t.work_date,t.circuit,t.exchange,t.service_type,t.status,
       owners.technician_id AS submission_technician_id,p.full_name AS technician_name,
       s.id AS submission_id,s.submitted_at,(s.submitted_at IS NOT NULL) AS completed,
-      (owners.technician_id=t.technician_id AND t.status='Resolved') AS active_assignment,
+      (owners.technician_id=t.technician_id AND (CASE WHEN t.spreadsheet_fields->'delivery' IS NOT NULL THEN lower(trim(t.spreadsheet_fields->'delivery'->>'actioned'))='delivered' ELSE t.status='Resolved' END)) AS active_assignment,
       s.submitted_at + interval '24 hours' AS edit_deadline,
-      (owners.technician_id=t.technician_id AND t.status='Resolved' AND coalesce(s.status::text,'draft') <> 'locked'
+      (owners.technician_id=t.technician_id AND (CASE WHEN t.spreadsheet_fields->'delivery' IS NOT NULL THEN lower(trim(t.spreadsheet_fields->'delivery'->>'actioned'))='delivered' ELSE t.status='Resolved' END) AND coalesce(s.status::text,'draft') <> 'locked'
         AND (s.submitted_at IS NULL OR clock_timestamp() < s.submitted_at + interval '24 hours')) AS can_edit
       FROM assurance_tickets t
       JOIN LATERAL (
-        SELECT t.technician_id WHERE t.status='Resolved'
+        SELECT t.technician_id WHERE (CASE WHEN t.spreadsheet_fields->'delivery' IS NOT NULL THEN lower(trim(t.spreadsheet_fields->'delivery'->>'actioned'))='delivered' ELSE t.status='Resolved' END)
         UNION SELECT historical.technician_id FROM assurance_submissions historical
           WHERE historical.ticket_id=t.id AND historical.submitted_at IS NOT NULL
       ) owners ON true
@@ -45,14 +46,14 @@ export class AssuranceSubmissionsService {
     if (actor.role !== 'technician') throw new ForbiddenException('Technician access required');
     const rows = await this.db.query(`SELECT t.id,t.ticket_number,t.work_date,t.circuit,t.exchange,t.service_type,t.status,t.technician_id,
       p.full_name AS technician_name,s.id AS submission_id,s.status AS submission_status,s.submitted_at,s.updated_at AS submission_updated_at,
-      (t.technician_id=$1 AND t.status='Resolved') AS active_assignment,
+      (t.technician_id=$1 AND (CASE WHEN t.spreadsheet_fields->'delivery' IS NOT NULL THEN lower(trim(t.spreadsheet_fields->'delivery'->>'actioned'))='delivered' ELSE t.status='Resolved' END)) AS active_assignment,
       (s.submitted_at IS NOT NULL) AS completed,
       (s.submitted_at + interval '24 hours') AS edit_deadline,
-      (t.technician_id=$1 AND t.status='Resolved' AND coalesce(s.status::text,'draft') <> 'locked'
+      (t.technician_id=$1 AND (CASE WHEN t.spreadsheet_fields->'delivery' IS NOT NULL THEN lower(trim(t.spreadsheet_fields->'delivery'->>'actioned'))='delivered' ELSE t.status='Resolved' END) AND coalesce(s.status::text,'draft') <> 'locked'
        AND (s.submitted_at IS NULL OR clock_timestamp() < s.submitted_at + interval '24 hours')) AS can_edit
       FROM assurance_tickets t LEFT JOIN assurance_submissions s ON s.ticket_id=t.id AND s.technician_id=$1
       LEFT JOIN profiles p ON p.id=t.technician_id
-      WHERE (t.technician_id=$1 AND t.status='Resolved') OR s.submitted_at IS NOT NULL
+      WHERE (t.technician_id=$1 AND (CASE WHEN t.spreadsheet_fields->'delivery' IS NOT NULL THEN lower(trim(t.spreadsheet_fields->'delivery'->>'actioned'))='delivered' ELSE t.status='Resolved' END)) OR s.submitted_at IS NOT NULL
       ORDER BY (s.submitted_at IS NOT NULL) DESC,coalesce(s.submitted_at,t.updated_at) DESC,t.id`, [actor.userId]);
     return { rows, counts: { completed: rows.filter((r:any)=>r.completed).length, pending: rows.filter((r:any)=>!r.completed).length }, server_time: new Date().toISOString() };
   }
@@ -63,7 +64,7 @@ export class AssuranceSubmissionsService {
     const [ticket] = await this.db.query('SELECT * FROM assurance_tickets WHERE id=$1', [uuid(ticketId)]);
     if (!ticket) throw new NotFoundException('Ticket not found');
     const [submission] = await this.db.query('SELECT * FROM assurance_submissions WHERE ticket_id=$1 AND technician_id=$2', [ticketId,owner]);
-    if (actor.role === 'technician' && !(ticket.technician_id===owner && ticket.status==='Resolved') && !submission?.submitted_at) throw new ForbiddenException('This task is not assigned to you');
+    if (actor.role === 'technician' && !(ticket.technician_id===owner && norm(orderValues(ticket).actioned)==='delivered') && !submission?.submitted_at) throw new ForbiddenException('This task is not assigned to you');
     return {ticket, submission:submission || null, can_edit:canEdit(ticket,submission,actor), server_time:new Date().toISOString(), options: Object.fromEntries(assuranceFields.filter(f=>['root_cause','resolution','saas_type'].includes(f.key)).map(f=>[f.key,f.options || []]))};
   }
 

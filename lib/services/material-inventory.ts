@@ -16,9 +16,9 @@ export class MaterialInventory {
  constructor(private db:Database){}
  private async project(id:string,db=this.db){
   uuid(id);
-  const [project]=await db.query("SELECT id FROM projects WHERE id=$1 AND code='SERVICE_ASSURANCE'",[id]);
+  const [project]=await db.query("SELECT id FROM projects WHERE id=$1",[id]);
   // The saved display-name migration maps SERVICE_ASSURANCE to Service Delivery.
-  if(!project)throw new BadRequestException('Inventory is available for Service Delivery only');
+  if(!project)throw new BadRequestException('Project not found');
  }
  async list(projectId:string,month:string){
   if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))throw new BadRequestException('Use a valid month');

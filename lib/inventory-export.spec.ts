@@ -5,6 +5,10 @@ import template from './inventory-export-template.json';
 import {inventoryQuantityLabel,inventoryStep,inventoryItemLabel} from './inventory-units';
 
 describe('Inventory units and monthly Excel export',()=>{
+ it('labels exports with the selected project including future project names',()=>{
+  const sheet=read(exportInventory('2026-10',[],'New Project'),{type:'array'}).Sheets['Dashboard 2026'];
+  expect(sheet.A1.v).toBe('New Project Material Dashboard - October 2026');
+ });
  it('uses whole pieces and decimal meter lengths with clear labels',()=>{
   for(const unit of ['piece','Pieces','pcs','EA','Each',' Piece/s ']){
    expect(inventoryStep(unit)).toBe(1);expect(inventoryQuantityLabel(unit)).toBe('Quantity(Piece/s)');

@@ -9,7 +9,7 @@ const key=(value:string)=>value.trim().toLowerCase().replace(/\s+/g,' ');
 
 // Use the supplied dashboard's actual style definitions. SheetJS's ordinary writer
 // does not preserve its fills/borders, so replace the worksheet and style ZIP parts.
-export function exportInventory(month:string,rows:InventoryExportRow[]):Uint8Array{
+export function exportInventory(month:string,rows:InventoryExportRow[],projectName?:string):Uint8Array{
  if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))throw new Error('Choose a valid month');
  if(rows.length>16383)throw new Error('Too many materials for an Excel sheet');
  const remaining=[...rows],ordered:Array<{item:InventoryExportRow;styles:number[]}>=[];
@@ -21,7 +21,7 @@ export function exportInventory(month:string,rows:InventoryExportRow[]):Uint8Arr
  const last=utils.encode_col(Math.max(1,ordered.length));
  const period=new Date(`${month}-01T00:00:00Z`).toLocaleDateString('en-GB',{month:'long',year:'numeric',timeZone:'UTC'});
  const data=Array.from({length:9},(_,r)=>{
-  const label=r===0?`${template.headers[0]} - ${period}`:template.headers[r];
+  const label=r===0?`${projectName?projectName+' Material Dashboard':template.headers[0]} - ${period}`:template.headers[r];
   let cells=`<c r="A${r+1}" s="${template.columns[0].styles[r]}" t="inlineStr"><is><t>${xml(label)}</t></is></c>`;
   for(const [{item,styles},i] of ordered.map((v,i)=>[v,i] as const)){
    const col=utils.encode_col(i+1),ref=`${col}${r+1}`;
