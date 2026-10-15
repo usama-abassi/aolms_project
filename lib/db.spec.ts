@@ -18,9 +18,11 @@ describe('PostgreSQL certificate configuration',()=>{
   vi.stubEnv('DATABASE_SSL_CA','first');const old=getPool();expect(getPool()).toBe(old);
   vi.stubEnv('DATABASE_SSL_CA','second');expect(getPool()).not.toBe(old);expect(old.end).toHaveBeenCalledOnce();expect(state.options[1].ssl.ca).toBe('second');
  });
- it('never disables verification through the legacy environment flag',()=>{
+ it('allows verification to be disabled explicitly without a CA',()=>{
   vi.stubEnv('DATABASE_URL','postgresql://test:example@localhost/postgres');
   vi.stubEnv('DATABASE_SSL_CA',undefined);vi.stubEnv('DATABASE_SSL_REJECT_UNAUTHORIZED','false');
-  getPool();expect(state.options[0].ssl.rejectUnauthorized).toBe(true);
+  const old=getPool();expect(state.options[0].ssl).toEqual({rejectUnauthorized:false});
+  vi.stubEnv('DATABASE_SSL_REJECT_UNAUTHORIZED','true');
+  expect(getPool()).not.toBe(old);expect(old.end).toHaveBeenCalledOnce();expect(state.options[1].ssl.rejectUnauthorized).toBe(true);
  });
 });

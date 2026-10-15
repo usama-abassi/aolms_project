@@ -40,7 +40,7 @@ Set the following for **Production** and any **Preview/Development** environment
 | `DATABASE_URL` | Yes | PostgreSQL pooler connection string; server only; URL-encode special password characters |
 | `DATABASE_POOL_MAX` | No | Defaults to `4` connections per warm function instance |
 | `DATABASE_SSL_CA` | No | Provider CA certificate if needed; literal `\n` line separators are accepted |
-| `DATABASE_SSL_REJECT_UNAUTHORIZED` | No | Defaults to `true`; prefer a CA certificate for verification. The previous local connection used `false`; the migrated private local environment preserves that setting. |
+| `DATABASE_SSL_REJECT_UNAUTHORIZED` | No | Defaults to `true`. Set to `false` to use the previous connection behavior without a custom CA; the connection remains encrypted but the server certificate is not verified. A supplied CA always enables verification. |
 
 Use Supabase's transaction pooler for Vercel (normally port 6543), with the exact hostname/username from your project's Connect panel. A shared session pooler also works if configured for your database. The application uses bound, unnamed SQL queries, a small module-level pool, and Vercel's `attachDatabasePool` lifecycle support. Database clients are initialized lazily and shared by requests; transactions always release their connections. `DATABASE_SSL_CA` takes precedence over the verification flag.
 

@@ -7,11 +7,12 @@ const globalDb=globalThis as typeof globalThis & {aolmsPool?:Pool;aolmsPoolConfi
 export function getPool(){
  if(!process.env.DATABASE_URL)throw new Error('DATABASE_URL is required');
  const ca=process.env.DATABASE_SSL_CA?.replace(/\\n/g,'\n');
- const config=createHash('sha256').update(JSON.stringify([process.env.DATABASE_URL,ca,process.env.DATABASE_POOL_MAX])).digest('hex');
+ const rejectUnauthorized=ca?true:process.env.DATABASE_SSL_REJECT_UNAUTHORIZED!=='false';
+ const config=createHash('sha256').update(JSON.stringify([process.env.DATABASE_URL,ca,rejectUnauthorized,process.env.DATABASE_POOL_MAX])).digest('hex');
  if(!globalDb.aolmsPool||globalDb.aolmsPoolConfig!==config){
   const previous=globalDb.aolmsPool;
   globalDb.aolmsPool=new Pool({connectionString:process.env.DATABASE_URL,max:Number(process.env.DATABASE_POOL_MAX||4),idleTimeoutMillis:5000,connectionTimeoutMillis:15000,
-   ssl:{...(ca?{ca}:{}),rejectUnauthorized:true}});
+   ssl:{...(ca?{ca}:{}),rejectUnauthorized}});
   globalDb.aolmsPoolConfig=config;
   attachDatabasePool(globalDb.aolmsPool);
   globalDb.aolmsPool.on('error',error=>console.error('Idle database connection failed',error.message));
