@@ -7,6 +7,8 @@ import {Button} from '../../../components/Button';
 import {Card} from '../../../components/Card';
 import ShortcutsGuide from './ShortcutsGuide';
 import PlainTextCell from './PlainTextCell';
+import {gridDestination,gridPage} from './spreadsheet-rows';
+import {useGridFocus} from './useGridFocus';
 import {useDeliveryGrid,type ServerDraft} from './useDeliveryGrid';
 import {protectedGridFields} from '@/lib/services/assurance-tickets/grid-values';
 
@@ -25,15 +27,18 @@ function DeliveryGrid({projectId,userId,serviceAssurance,fields,technicians,tick
  const title=serviceAssurance?'Service Assurance':'Service Delivery';
  const [page,setPage]=useState(0),[review,setReview]=useState<string|null>(null);
  const table=useRef<HTMLTableElement>(null),tabStart=useRef<number|null>(null);
+ const focusCell=useGridFocus(table);
  const [notice,setNotice]=useState('');
- const visible=grid.rows.slice(page*25,(page+1)*25);
+ const pages=Math.max(1,Math.ceil(grid.recordCount/25)),current=Math.min(page,pages-1);
+ const visible=grid.rows.slice(current*25,current===pages-1?undefined:(current+1)*25);
  function focus(row:number,col:number){
   if(row<0||col<0||col>=fields.length)return;
-  if(row>=grid.rows.length)grid.add();
-  const nextPage=Math.floor(row/25);if(nextPage!==page)setPage(nextPage);
-  requestAnimationFrame(()=>table.current?.querySelector<HTMLElement>(`[data-cell="${row}:${col}"]`)?.focus());
+  if(row>=grid.rows.length)return;
+  const nextPage=gridPage(row,grid.recordCount);if(nextPage!==current)setPage(nextPage);
+  focusCell(row,col);
  }
- function move(row:number,col:number,key:string,shift:boolean){
+ function move(row:number,col:number,key:string,shift:boolean,id:string){
+  const latest=grid.rows.findIndex(r=>r.id===id);if(latest>=0)row=latest;
   if(key==='Tab'){
    if(tabStart.current===null)tabStart.current=col;
    const index=row*fields.length+col+(shift?-1:1);
@@ -41,31 +46,35 @@ function DeliveryGrid({projectId,userId,serviceAssurance,fields,technicians,tick
   }else if(key==='Enter'){
    const target=tabStart.current??col;tabStart.current=null;focus(row+(shift?-1:1),target);
   }else{
-   tabStart.current=null;focus(row+(key==='ArrowUp'?-1:key==='ArrowDown'?1:0),col+(key==='ArrowLeft'?-1:key==='ArrowRight'?1:0));
+   tabStart.current=null;const target=gridDestination(row,col,key,shift,fields.length);if(target)focus(target.row,target.col);
   }
  }
- function add(){const index=grid.add();setPage(Math.floor(index/25));requestAnimationFrame(()=>table.current?.querySelector<HTMLElement>(`[data-cell="${index}:0"]`)?.focus());}
+ function add(){
+  const index=grid.add(),nextPage=gridPage(index,grid.recordCount);setPage(nextPage);
+  const existing=nextPage===current?table.current?.querySelector<HTMLElement>(`[data-cell="${index}:0"]`):null;
+  if(existing)existing.focus();else focusCell(index,0);
+ }
  const pending=grid.rows.filter(r=>r.pending.length).length;
  return <div className="space-y-3">
- <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-h4 font-semibold">{title}</h2><p className="text-sm text-neutral-500">{grid.rows.length} rows · Dates/times: Bahrain · <span role="status">{pending?`${pending} rows ${serviceAssurance?'awaiting submission':'saving or waiting to retry'}`:'All committed changes saved'}</span></p></div>
+ <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-h4 font-semibold">{title}</h2><p className="text-sm text-neutral-500">{grid.recordCount} rows · Dates/times: Bahrain · <span role="status">{pending?`${pending} rows ${serviceAssurance?'awaiting submission':'saving or waiting to retry'}`:'All committed changes saved'}</span></p></div>
  <div className="flex flex-wrap gap-2">{!serviceAssurance&&<ShortcutsGuide userId={userId}/>} {serviceAssurance&&<Button disabled={grid.rows.some(r=>r.state==='saving')} onClick={grid.retry}>Submit rows</Button>}<Button onClick={add}>Add row</Button><Button variant="outline" onClick={()=>{if(pending){if(serviceAssurance)setNotice('Submit your changes before refreshing.');else{grid.retry();setNotice('');}}else void refresh();}}>Refresh</Button><Button variant="ghost" onClick={grid.exportDraft}>Export draft</Button></div></div>
- <p className="text-xs text-neutral-500">{serviceAssurance?'Type to replace a cell; F2 or double-click to edit. Enter or Tab commits locally; Submit rows saves changes to the database. Only resolved rows with both ONT serial numbers need a technician response. Choose Team to assign the response. Assigned-date filters accept YYYY-MM-DD or DD/MM/YYYY with optional HH:mm (Bahrain).':'Type to replace a selected cell; F2 or double-click to edit. Enter or Tab commits and saves automatically. Exact typed text is retained. Only valid Resolved rows with a Team become technician Todo tasks.'}</p>
+ <p className="text-xs text-neutral-500">{serviceAssurance?'Type to replace a cell; arrows, Enter or Tab commit locally and move. F2 or double-click edits within the text. New rows appear automatically; Submit rows saves changes to the database. Only resolved rows with both ONT serial numbers need a technician response. Choose Team to assign the response. Assigned-date filters accept YYYY-MM-DD or DD/MM/YYYY with optional HH:mm (Bahrain).':'Type to replace a selected cell; arrows, Enter or Tab commit and save automatically. F2 or double-click edits within the text. New rows appear automatically. Exact typed text is retained. Only valid Resolved rows with a Team become technician Todo tasks.'}</p>
  {!technicians.length&&<p className="text-sm text-warning-700">No active Technicians are configured. An Admin must add one before a task can be assigned.</p>}
  {grid.error&&<p role="alert" className="text-danger-600">{grid.error}</p>}{notice&&<p role="status">{notice}</p>}
  {grid.hasRecovery&&<div className="text-sm">Uncommitted text from a previous visit is available. <Button variant="outline" onClick={grid.recover}>Restore uncommitted text</Button></div>}
  <Card padding="none" className="overflow-hidden"><div className="max-h-[65vh] overflow-auto"><table ref={table} className="border-collapse text-sm" aria-label={`${title} spreadsheet`}><thead className="sticky top-0 z-20 bg-neutral-100 dark:bg-neutral-800"><tr><th className="sticky left-0 z-30 min-w-44 bg-neutral-100 p-2 dark:bg-neutral-800">Row</th>{fields.map(f=><th key={f.key} className="min-w-48 border border-neutral-200 p-2 text-left dark:border-neutral-700"><span className="text-xs text-neutral-400">{f.excelColumn} </span>{f.label}</th>)}</tr></thead><tbody>
- {visible.map((row,rowIndex)=>{const index=page*25+rowIndex;return <tr key={row.id}><td className={`sticky left-0 z-10 border border-l-4 bg-white p-2 dark:bg-neutral-900 ${row.state==='record'?'border-l-emerald-500':'border-l-amber-400'}`}><span>{index+1} · {row.state==='record'?'Saved':row.state==='saving'?'Saving…':row.state==='pending'?'Pending':'Draft'}</span>{(row.errors._row||row.errors._save)&&<div className="max-w-48 text-xs text-danger-600">{row.errors._row||row.errors._save}<button className="block underline" onClick={async()=>{try{if(await grid.loadReview(row.id))setReview(row.id);}catch(e){setNotice((e as Error).message);}}}>Review draft</button></div>}</td>
+ {visible.map((row,rowIndex)=>{const index=current*25+rowIndex;return <tr key={row.id}><td className={`sticky left-0 z-10 border border-l-4 bg-white p-2 dark:bg-neutral-900 ${row.state==='record'?'border-l-emerald-500':'border-l-amber-400'}`}><span>{index+1} · {!row.record&&row.base_version===null&&!Object.values(row.values).some(v=>v.trim())?'New row':row.state==='record'?'Saved':row.state==='saving'?'Saving…':row.state==='pending'?'Pending':'Draft'}</span>{(row.errors._row||row.errors._save)&&<div className="max-w-48 text-xs text-danger-600">{row.errors._row||row.errors._save}<button className="block underline" onClick={async()=>{try{if(await grid.loadReview(row.id))setReview(row.id);}catch(e){setNotice((e as Error).message);}}}>Review draft</button></div>}</td>
  {fields.map((f,colIndex)=>{const protectedCell=!serviceAssurance&&protectedGridFields.has(f.key);let value=row.values[f.key]??'';
  if(!serviceAssurance&&f.key==='controller_id')value=String(row.record?.controller_name||'You');
  if(!serviceAssurance&&f.key==='sla_from_creation')value=row.record?.sla_from_creation!=null?`${(Number(row.record.sla_from_creation)*24).toFixed(2)} h`:'';
  if(!serviceAssurance&&f.key==='kpi_status')value=String(row.record?.kpi_status||'');
  return <td key={f.key} className={`relative border border-neutral-200 dark:border-neutral-700 ${row.state==='draft'?'bg-warning-50/40 dark:bg-warning-950/10':''}`}>
  {protectedCell&&<Lock aria-hidden="true" className="absolute right-1 top-1 h-3 w-3 text-neutral-400"/>}{row.errors[f.key]&&<span title={row.errors[f.key]} className="absolute right-0 top-0 h-0 w-0 border-l-[8px] border-t-[8px] border-l-transparent border-t-red-500"/>}
- {serviceAssurance&&f.key==='team'?<select aria-label={`Team, row ${index+1}`} data-cell={`${index}:${colIndex}`} value={value} className="block min-w-48 border-0 bg-transparent p-2 text-sm focus:ring-2 focus:ring-primary-500" onPointerDown={()=>{tabStart.current=null;}} onChange={e=>grid.commit(row.id,f.key,e.target.value)} onKeyDown={e=>{if(e.key==='Tab'||e.key==='Enter'){e.preventDefault();move(index,colIndex,e.key,e.shiftKey);}}}><option value="">Select Team</option>{value&&!technicians.some(t=>t.id===value)&&<option value={value}>Previous Team (inactive)</option>}{technicians.map(t=><option key={t.id} value={t.id}>{t.full_name}</option>)}</select>:<PlainTextCell value={value} label={`${f.label}, row ${index+1}`} cell={`${index}:${colIndex}`} readOnly={protectedCell} error={row.errors[f.key]} onCommit={value=>grid.commit(row.id,f.key,value)} onCache={value=>grid.cache(row.id,f.key,value)} onSelect={()=>{tabStart.current=null;}} onMove={(key,shift)=>move(index,colIndex,key,shift)}/>}
+ {serviceAssurance&&f.key==='team'?<select aria-label={`Team, row ${index+1}`} data-cell={`${index}:${colIndex}`} value={value} className="block min-w-48 border-0 bg-transparent p-2 text-sm focus:ring-2 focus:ring-primary-500" onPointerDown={()=>{tabStart.current=null;}} onChange={e=>grid.commit(row.id,f.key,e.target.value)} onKeyDown={e=>{if(!e.altKey&&!e.ctrlKey&&!e.metaKey&&['Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();move(index,colIndex,e.key,e.shiftKey,row.id);}}}><option value="">Select Team</option>{value&&!technicians.some(t=>t.id===value)&&<option value={value}>Previous Team (inactive)</option>}{technicians.map(t=><option key={t.id} value={t.id}>{t.full_name}</option>)}</select>:<PlainTextCell value={value} label={`${f.label}, row ${index+1}`} cell={`${index}:${colIndex}`} readOnly={protectedCell} error={row.errors[f.key]} onCommit={value=>grid.commit(row.id,f.key,value)} onCache={value=>grid.cache(row.id,f.key,value)} onSelect={()=>{tabStart.current=null;}} onMove={(key,shift)=>move(index,colIndex,key,shift,row.id)}/>}
  </td>;})}</tr>;})}
  {!grid.rows.length&&<tr><td colSpan={fields.length+1} className="p-8">No records yet. Add a row to begin.</td></tr>}
  </tbody></table></div></Card>
- <div className="flex gap-3"><Button variant="outline" disabled={page===0} onClick={()=>setPage(p=>p-1)}>Previous</Button><span>Page {page+1} of {Math.max(1,Math.ceil(grid.rows.length/25))}</span><Button variant="outline" disabled={(page+1)*25>=grid.rows.length} onClick={()=>setPage(p=>p+1)}>Next</Button></div>
+ <div className="flex gap-3"><Button variant="outline" disabled={current===0} onClick={()=>setPage(current-1)}>Previous</Button><span>Page {current+1} of {pages}</span><Button variant="outline" disabled={current>=pages-1} onClick={()=>setPage(current+1)}>Next</Button></div>
  {review&&<section className="rounded border p-4 text-sm"><h3 className="font-semibold">Review retained draft</h3><p>The official record is not overwritten when a draft is invalid or another user has changed it. Compare your typed draft with the latest official record below before applying it.</p><div className="grid gap-3 md:grid-cols-2"><div><h4>Your draft</h4><pre className="max-h-64 overflow-auto whitespace-pre-wrap">{JSON.stringify(grid.rows.find(r=>r.id===review)?.values,null,2)}</pre></div><div><h4>Latest official record</h4><pre className="max-h-64 overflow-auto whitespace-pre-wrap">{JSON.stringify(grid.reviewed.get(review)?.record||{},null,2)}</pre></div></div><div className="mt-3 flex gap-2"><Button onClick={()=>{grid.applyReviewed(review);setReview(null);}}>Apply reviewed draft</Button><Button variant="outline" onClick={()=>{grid.closeReview(review);setReview(null);}}>Close review</Button></div></section>}
  </div>;
 }

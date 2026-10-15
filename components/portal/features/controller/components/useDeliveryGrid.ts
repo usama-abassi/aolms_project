@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {api,ticketDraft,type Ticket,type Field,type Draft} from '../../assurance/api';
 import {randomId} from '../../../lib/uuid';
+import {hasCellData,withEmptyRow} from './spreadsheet-rows';
 
 export type ServerDraft={user_id:string;id:string;project_id:string;raw_values:Record<string,string>;errors:Record<string,string>;version:number;own_version?:number;record_version:number|null;state:'draft'|'record';mutation_id:string};
 export type GridRow={id:string;values:Record<string,string>;base_version:number|null;draft_version:number;state:string;errors:Record<string,string>;record?:Ticket;pending:Array<{values:Record<string,string>;mutation_id:string}>};
@@ -16,6 +17,15 @@ export function useDeliveryGrid(projectId:string,userId:string,fields:Field[],ti
  const [hasRecovery,setHasRecovery]=useState(false);
  const rows=useRef<GridRow[]|null>(null);
  const reviewed=useRef(new Map<string,{record:Ticket|undefined;version:number}>());
+ const stored=(row:GridRow)=>!!row.record||row.base_version!==null||row.draft_version>0||busy.current.has(row.id);
+ const meaningful=(row:GridRow)=>stored(row)||hasCellData(row.values);
+ function blank():GridRow{return {id:randomId(),values:{},base_version:null,draft_version:0,state:'draft',errors:{},pending:[]};}
+ function normalize(preferred?:string){
+  const previous=rows.current!;
+  rows.current=withEmptyRow(previous,stored,blank,editingCache.current,preferred);
+  for(const row of rows.current)if(!meaningful(row)){row.pending=[];row.errors={};row.state='draft';}
+  return previous.length!==rows.current.length||previous.some((row,i)=>row!==rows.current![i]);
+ }
  if(!rows.current){
   const map=new Map(tickets.map(t=>{
    const values=ticketDraft(t,fields).values;
@@ -27,7 +37,7 @@ export function useDeliveryGrid(projectId:string,userId:string,fields:Field[],ti
    snapshot.current=localStorage.getItem(key);
    if(snapshot.current){
     const cached=JSON.parse(snapshot.current);
-    for(const row of cached.rows||[])if(row.pending?.length){map.set(row.id,{...row,record:map.get(row.id)?.record||row.record});}
+    for(const row of cached.rows||[])if(row.pending?.length||hasCellData({...row.values,...cached.editing?.[row.id]})){map.set(row.id,{...row,record:map.get(row.id)?.record||row.record});}
     // A page closed while editing retains that text as a recoverable, uncommitted edit.
     editingCache.current=cached.editing||{};
     if(Object.values(editingCache.current).some(v=>Object.keys(v).length))setHasRecovery(true);
@@ -37,13 +47,14 @@ export function useDeliveryGrid(projectId:string,userId:string,fields:Field[],ti
    }
   }catch{/* Preserve unreadable cache; persistence reports the error instead of discarding it. */blocked.current=true;}
   rows.current=[...map.values()];
+  normalize();
  }
  function update(){if(mounted.current)render(v=>v+1);}
  function persist(){
   if(blocked.current){setError('Local draft storage changed or could not be read. Your edits remain on screen; export them before refreshing.');return false;}
   try{
    if(localStorage.getItem(key)!==snapshot.current){blocked.current=true;setError('This grid changed in another tab. Your text is retained; export before refreshing.');return false;}
-   const value=JSON.stringify({rows:rows.current!.filter(row=>row.pending.length),editing:editingCache.current});localStorage.setItem(key,value);snapshot.current=value;return true;
+   const value=JSON.stringify({rows:rows.current!.filter(row=>(row.pending.length&&meaningful(row))||Object.keys(editingCache.current[row.id]||{}).length),editing:editingCache.current});localStorage.setItem(key,value);snapshot.current=value;return true;
   }catch{setError('Browser backup is unavailable. Keep this page open until database saving succeeds.');return true;}
  }
  async function drain(id:string){
@@ -65,26 +76,28 @@ export function useDeliveryGrid(projectId:string,userId:string,fields:Field[],ti
   const row=rows.current!.find(r=>r.id===id)!;
   if(row.values[field]===value)return;
   row.values={...row.values,[field]:value};delete row.errors[field];delete row.errors._save;
+  if(!meaningful(row)){
+   row.pending=[];row.state='draft';row.errors={};delete editingCache.current[id];normalize(id);update();persist();return;
+  }
   const task={values:{...row.values},mutation_id:randomId()};
   if(config.manual)row.pending.splice(busy.current.has(id)?1:0,row.pending.length,task);else row.pending.push(task);
-  row.state='pending';update();if(persist()&&!config.manual)void drain(id);
+  row.state='pending';normalize();update();if(persist()&&!config.manual)void drain(id);
  }
  function add(){
-  const id=randomId(),values:Record<string,string>={};
-  rows.current!.push({id,values,base_version:null,draft_version:0,state:'pending',errors:{},pending:[{values,mutation_id:randomId()}]});
-  update();if(persist()&&!config.manual)void drain(id);return rows.current!.length-1;
+  normalize();update();return rows.current!.length-1;
  }
  function cache(id:string,field:string,value:string|null){
   if(value===null){delete editingCache.current[id]?.[field];}else editingCache.current[id]={...editingCache.current[id],[field]:value};
-  persist();
+  if(!Object.keys(editingCache.current[id]||{}).length||(!hasCellData(editingCache.current[id]||{})&&!meaningful(rows.current!.find(row=>row.id===id)!)))delete editingCache.current[id];
+  const changed=normalize(id);persist();if(changed)update();
  }
  function recover(){
   setHasRecovery(false);
-  const cached=editingCache.current;editingCache.current={};
+  const cached=editingCache.current;
   for(const [id,values] of Object.entries(cached))for(const [field,value] of Object.entries(values))if(rows.current!.some(r=>r.id===id))commit(id,field,value);
-  persist();update();
+  editingCache.current={};normalize();persist();update();
  }
- function retry(){for(const row of rows.current!)if(row.pending.length)void drain(row.id);}
+ function retry(){for(const row of rows.current!)if(row.pending.length&&meaningful(row))void drain(row.id);}
  async function loadReview(id:string){
   if(busy.current.has(id)){setError('This row is saving. Review it once the request finishes.');return false;}
   const [latest,serverDrafts]=await Promise.all([api<Ticket[]>(`${recordsPath}?project_id=${projectId}`),api<ServerDraft[]>(`${gridPath}?project_id=${projectId}`)]);
@@ -110,7 +123,7 @@ export function useDeliveryGrid(projectId:string,userId:string,fields:Field[],ti
   return()=>{mounted.current=false;window.removeEventListener('online',online);clearInterval(interval);};
  },[]);
  function exportDraft(){
-  const url=URL.createObjectURL(new Blob([JSON.stringify({rows:rows.current,editing:editingCache.current},null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=config.manual?'service-assurance-drafts.json':'service-delivery-drafts.json';link.click();URL.revokeObjectURL(url);
+  const url=URL.createObjectURL(new Blob([JSON.stringify({rows:rows.current!.filter(row=>meaningful(row)||hasCellData(editingCache.current[row.id]||{})),editing:editingCache.current},null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=config.manual?'service-assurance-drafts.json':'service-delivery-drafts.json';link.click();URL.revokeObjectURL(url);
  }
- return {rows:rows.current!,error,commit,add,cache,recover,exportDraft,retry,applyReviewed,loadReview,closeReview,reviewed:reviewed.current,hasRecovery};
+ return {get rows(){return rows.current!;},get recordCount(){return rows.current!.filter(meaningful).length;},error,commit,add,cache,recover,exportDraft,retry,applyReviewed,loadReview,closeReview,reviewed:reviewed.current,hasRecovery};
 }
