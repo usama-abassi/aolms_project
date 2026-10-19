@@ -21,6 +21,7 @@ const AdminLayout: React.FC<{children:React.ReactNode}> = ({children}) => {
     { label: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard className="w-5 h-5" /> },
     { label: 'Users', path: '/admin/profiles', icon: <Users className="w-5 h-5" /> },
     { label: 'Projects', path: '/admin/projects', icon: <FolderKanban className="w-5 h-5" /> },
+    { label: 'Service Assurance Audit', path: '/admin/audit', icon: <FolderKanban className="w-5 h-5" /> },
     { label: 'Operations Data', path: '/admin/operations-data', icon: <Database className="w-5 h-5" /> },
     { label: 'Operations Center', path: '/admin/legacy-operations', icon: <Presentation className="w-5 h-5" /> },
   ];

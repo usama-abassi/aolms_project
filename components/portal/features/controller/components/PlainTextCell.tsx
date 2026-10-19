@@ -17,7 +17,22 @@ export default function PlainTextCell({value,label,cell,readOnly,error,onCommit,
   if(readOnly)return;
   direct.current=directTyping;caret.current=next.length;original.current=value;buffer.current=next;editingRef.current=true;setEditing(true);setText(next);onCache(next);
  }
- function commit(){if(!editingRef.current)return;editingRef.current=false;setEditing(false);if(buffer.current!==original.current)onCommit(buffer.current);onCache(null);}
+ function write(value:string){
+  const detail={value,accepted:true}
+  const event=new CustomEvent('spreadsheet-commit',{bubbles:true,cancelable:true,detail})
+  if(input.current?.dispatchEvent(event))onCommit(value)
+  return detail.accepted
+ }
+ function commit(){
+  if(!editingRef.current)return
+  editingRef.current=false
+  setEditing(false)
+  if(buffer.current!==original.current&&!write(buffer.current)){
+   buffer.current=original.current
+   setText(original.current)
+  }
+  onCache(null)
+ }
  function replaceSelection(insert:string){
   if(readOnly)return;
   if(!editingRef.current){start(insert,true);return;}
@@ -28,7 +43,10 @@ export default function PlainTextCell({value,label,cell,readOnly,error,onCommit,
   className={`block w-full min-w-48 resize-none border-0 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 ${readOnly?'bg-neutral-100 text-neutral-500 dark:bg-neutral-800':'bg-transparent'}`}
   onFocus={()=>{if(!editingRef.current){original.current=value;buffer.current=value;} }}
   onPointerDown={()=>{onSelect();}}
-  onDoubleClick={()=>start(value)}
+  onDoubleClick={e=>{
+   e.preventDefault()
+   start(value)
+  }}
   onBlur={commit}
   onChange={e=>{buffer.current=e.target.value;setText(e.target.value);onCache(e.target.value);}}
   onPaste={e=>{if(readOnly){e.preventDefault();return;}if(!editingRef.current){e.preventDefault();start(e.clipboardData.getData('text/plain'),true);}}}
@@ -42,7 +60,6 @@ export default function PlainTextCell({value,label,cell,readOnly,error,onCommit,
    if(e.key==='F2'){e.preventDefault();start(value);return;}
    if(e.key==='Enter'&&e.altKey&&!mod){e.preventDefault();replaceSelection('\n');return;}
    if(e.key==='Enter'||e.key==='Tab'){
-    // Leave fill-selection shortcuts for Phase 2.
     if(mod)return;
     e.preventDefault();commit();onMove(e.key,e.shiftKey);return;
    }

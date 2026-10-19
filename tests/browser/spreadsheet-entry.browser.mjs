@@ -1,7 +1,8 @@
 import {chromium,expect} from '@playwright/test';
 import assert from 'node:assert/strict';
 import {config} from 'dotenv';
-import {serviceAssuranceFields} from '../../lib/service-assurance-fields.ts';
+import fs from 'node:fs'
+const serviceAssuranceFields=JSON.parse(fs.readFileSync('lib/service-assurance-schema.json','utf8')).fields
 
 config({path:'.env.local',quiet:true});
 const base=process.env.SPREADSHEET_TEST_URL||'http://localhost:3000';

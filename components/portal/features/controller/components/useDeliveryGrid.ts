@@ -3,6 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import {api,ticketDraft,type Ticket,type Field,type Draft} from '../../assurance/api';
 import {randomId} from '../../../lib/uuid';
 import {hasCellData,withEmptyRow} from './spreadsheet-rows';
+import {type CellWrite,type CellChange} from './spreadsheet-selection'
 
 export type ServerDraft={user_id:string;id:string;project_id:string;raw_values:Record<string,string>;errors:Record<string,string>;version:number;own_version?:number;record_version:number|null;state:'draft'|'record';mutation_id:string};
 export type GridRow={id:string;values:Record<string,string>;base_version:number|null;draft_version:number;state:string;errors:Record<string,string>;record?:Ticket;pending:Array<{values:Record<string,string>;mutation_id:string}>};
@@ -72,17 +73,44 @@ export function useDeliveryGrid(projectId:string,userId:string,fields:Field[],ti
   }catch(e){row.state='pending';row.errors={...row.errors,_save:(e as Error).message};persist();update();}
   finally{busy.current.delete(id);}
  }
- function commit(id:string,field:string,value:string){
-  const row=rows.current!.find(r=>r.id===id)!;
-  if(row.values[field]===value)return;
-  row.values={...row.values,[field]:value};delete row.errors[field];delete row.errors._save;
-  if(!meaningful(row)){
-   row.pending=[];row.state='draft';row.errors={};delete editingCache.current[id];normalize(id);update();persist();return;
+ function commitMany(writes:CellWrite[]){
+  const changes:CellChange[]=[],affected=new Set<string>()
+  const byId=new Map(rows.current!.map(row=>[row.id,row]))
+  for(const write of writes){
+   let row=byId.get(write.id)
+   if(!row){
+    row={...blank(),id:write.id}
+    rows.current!.push(row)
+    byId.set(row.id,row)
+   }
+   const before=row.values[write.key]??''
+   if(before===write.value)continue
+   changes.push({...write,before})
+   row.values={...row.values,[write.key]:write.value}
+   delete row.errors[write.key]
+   delete row.errors._save
+   affected.add(row.id)
   }
-  const task={values:{...row.values},mutation_id:randomId()};
-  if(config.manual)row.pending.splice(busy.current.has(id)?1:0,row.pending.length,task);else row.pending.push(task);
-  row.state='pending';normalize();update();if(persist()&&!config.manual)void drain(id);
+  for(const id of affected){
+   const row=byId.get(id)!
+   if(!meaningful(row)){
+    row.pending=[]
+    row.state='draft'
+    row.errors={}
+    delete editingCache.current[id]
+    continue
+   }
+   const task={values:{...row.values},mutation_id:randomId()}
+   if(config.manual)row.pending.splice(busy.current.has(id)?1:0,row.pending.length,task)
+   else row.pending.push(task)
+   row.state='pending'
+  }
+  normalize()
+  update()
+  if(persist()&&!config.manual)for(const id of affected)void drain(id)
+  return changes
  }
+ function commit(id:string,field:string,value:string){commitMany([{id,key:field,value}])}
  function add(){
   normalize();update();return rows.current!.length-1;
  }
@@ -125,5 +153,5 @@ export function useDeliveryGrid(projectId:string,userId:string,fields:Field[],ti
  function exportDraft(){
   const url=URL.createObjectURL(new Blob([JSON.stringify({rows:rows.current!.filter(row=>meaningful(row)||hasCellData(editingCache.current[row.id]||{})),editing:editingCache.current},null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=config.manual?'service-assurance-drafts.json':'service-delivery-drafts.json';link.click();URL.revokeObjectURL(url);
  }
- return {get rows(){return rows.current!;},get recordCount(){return rows.current!.filter(meaningful).length;},error,commit,add,cache,recover,exportDraft,retry,applyReviewed,loadReview,closeReview,reviewed:reviewed.current,hasRecovery};
+ return {get rows(){return rows.current!;},get recordCount(){return rows.current!.filter(meaningful).length;},error,commit,commitMany,add,cache,recover,exportDraft,retry,applyReviewed,loadReview,closeReview,reviewed:reviewed.current,hasRecovery};
 }

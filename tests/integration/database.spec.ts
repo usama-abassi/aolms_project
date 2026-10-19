@@ -8,34 +8,62 @@ import {randomUUID} from 'node:crypto';
 import {DeliveryGridService} from '@/lib/services/assurance-tickets/delivery-grid.service';
 import {getProjectsService,getOperationsDatabase,getProjectAuditService,getStaffService,getServiceDeliveryService} from '@/lib/services/registry';
 describe('Existing Supabase database (read only)',()=>{
- it('Service Assurance replacement rows move from not filled to submitted once (rolled back)',async()=>{
+ it('Service Assurance October workflow preserves assignments, drafts, history and material output (rolled back)',async()=>{
   await expect(db.transaction(async tx=>{
-   const service=new ServiceAssurance({query:tx.query.bind(tx),transaction:async fn=>fn(tx)} as typeof db);
-   const [project]=await tx.query("SELECT id FROM projects WHERE code='SERVICE_DELIVERY'");
-   const [controller]=await tx.query("SELECT id FROM profiles WHERE role='controller' AND is_active LIMIT 1");
-   const [technician]=await tx.query("SELECT id FROM profiles WHERE role='technician' AND is_active LIMIT 1");
-   const manager={userId:controller.id,role:'controller'},actor={userId:technician.id,role:'technician'};
-   const id=randomUUID(),resetId=randomUUID();
-   const values={ticket_number:'00-test-'+id,team:technician.id,assigned_datetime:'01/04/2026 00:15',status:' ReSoLvEd ',old_serial:' OLD-001 ',new_serial:' NEW-002 ',mobile:'001234'};
-   const saved=await service.save({id,project_id:project.id,mutation_id:randomUUID(),base_version:null,values},manager);
-   await service.save({id:resetId,project_id:project.id,mutation_id:randomUUID(),base_version:null,values:{...values,ticket_number:'reset-'+id,old_serial:'',new_serial:'',resolution:'Network reset'}},manager);
-   const own=()=>service.audit(project.id).then(rows=>rows.filter(r=>r.id===id||r.id===resetId));
-   let audit=await own();
-   expect(audit.map(r=>r.id)).toEqual([id]);
-   expect(audit[0].assigned_date).toBe('2026-04-01');
-   expect(filterAssuranceAudit(audit,'','','','all').counts).toEqual({all:1,submitted:0,unfilled:1});
-   expect((await service.tasks(actor)).filter(r=>r.id===id||r.id===resetId).map(r=>r.id)).toEqual([id]);
-   await expect(service.submit(id,{version:saved.record.version,values:{Ticket_Number:'Not an answer',Actions_Taken:' '}},actor)).rejects.toThrow('at least one response');
-   expect(filterAssuranceAudit(await own(),'','','','unfilled').rows).toHaveLength(1);
-   await service.submit(id,{version:saved.record.version,values:{Actions_Taken:'Replaced ONT'}},actor);
-   await expect(service.submit(id,{version:saved.record.version,values:{Actions_Taken:'Duplicate'}},actor)).rejects.toThrow('already been submitted');
-   audit=await own();
-   expect(filterAssuranceAudit(audit,'2026-04-01','2026-04-01','old-001','submitted').counts).toEqual({all:1,submitted:1,unfilled:0});
-   expect((await service.form(id,actor)).values.Ticket_Number).toBe(values.ticket_number);
-   expect(await tx.query('SELECT row_id FROM service_assurance_responses WHERE row_id=$1',[id])).toHaveLength(1);
-   throw new Error('service assurance rollback');
-  })).rejects.toThrow('service assurance rollback');
- },120000);
+   const {readFile}=await import('node:fs/promises')
+   const migration=await readFile('database/migrations/20261019_service_assurance_materials.sql','utf8')
+   await tx.query(migration.replace(/^BEGIN;/,'').replace(/COMMIT;\s*$/,''))
+   const service=new ServiceAssurance({query:tx.query.bind(tx),transaction:async fn=>fn(tx)} as typeof db)
+   const [project]=await tx.query("SELECT id FROM projects WHERE code='SERVICE_DELIVERY'")
+   const [controller]=await tx.query("SELECT id FROM profiles WHERE role='controller' AND is_active LIMIT 1")
+   const [technician]=await tx.query("SELECT id FROM profiles WHERE role='technician' AND is_active LIMIT 1")
+   const manager={userId:controller.id,role:'controller'},actor={userId:technician.id,role:'technician'}
+   const id=randomUUID(),duplicate=randomUUID(),ticket='00-test-'+id,serial='TEST-'+id
+   const values={ticket_number:ticket,team:technician.id,assigned_datetime:'01/10/2026 00:15',status:' ReSoLvEd ',resolution:'Replaced Faulty ONT',old_serial:' OLD-001 ',new_serial:serial,ont_model:'WiFi-6'}
+   const save=(rowId:string,version:number|null,patch={})=>service.save({id:rowId,project_id:project.id,mutation_id:randomUUID(),base_version:version,values:{...values,...patch}},manager)
+   const saved=await save(id,null)
+   const own=()=>service.audit(project.id).then(rows=>rows.filter(r=>r.ticket_number===ticket))
+   expect((await own())[0].po_status).toBe('PO Not Found')
+   await tx.query("INSERT INTO equipment_records(kind,category,data) VALUES('ont','WiFi-6',$1)",[JSON.stringify({serial_number:' '+serial.toLowerCase()+' ',po_number:'000099'})])
+   expect((await own())[0].po_number).toBe('000099')
+   expect((await own())[0].report).toBeNull()
+   await expect(service.submit(id,{version:1,response_version:0,values:{'Patch Chord':'-1'}},actor)).rejects.toThrow('nonnegative')
+   await expect(service.submit(id,{version:1,response_version:0,values:{'Patch Chord':'1'}},{userId:randomUUID(),role:'technician'})).rejects.toThrow('not currently assigned')
+   let form=await service.form(id,actor)
+   const response={...form.values,'ONT Replaced ':'Yes','Replaced ONT ':'WiFi-6','New ONT Serial No ':serial,'OLD ONT Serial No ':'OLD-001','Patch Chord':'2'}
+   await service.submit(id,{version:saved.record.version,response_version:form.response_version,values:response,draft:true},actor)
+   expect((await own())[0].submitted_at).toBeNull()
+   form=await service.form(id,actor)
+   expect(form.values['SR / Ticket number']).toBe(ticket)
+   await service.submit(id,{version:form.version,response_version:form.response_version,values:response},actor)
+   let audit=await own()
+   expect(audit[0].issues).toEqual([])
+   expect(audit[0].report?.[49]).toBe('000099')
+   expect(audit[0].report?.[34]).toBe(2)
+   form=await service.form(id,actor)
+   await expect(service.submit(id,{version:form.version,response_version:0,values:response},actor)).rejects.toThrow('changed')
+   await service.submit(id,{version:form.version,response_version:form.response_version,values:{...response,'Patch Chord':'5'},draft:true},actor)
+   expect((await own())[0].report?.[34]).toBe(2)
+   expect((await service.form(id,actor)).values['Patch Chord']).toBe('5')
+   const latest=await save(duplicate,null)
+   expect((await own()).map(r=>r.id)).toEqual([duplicate])
+   expect((await own())[0].submitted_at).toBeTruthy()
+   await expect(service.submit(id,{version:1,response_version:0,values:response},actor)).rejects.toThrow('not currently assigned')
+   const held=await save(duplicate,latest.record.version,{status:'Hold'})
+   expect(await own()).toEqual([])
+   expect((await service.tasks(actor)).some(r=>r.ticket_number===ticket)).toBe(false)
+   const small=await save(duplicate,held.record.version,{new_serial:'',old_serial:'',resolution:'Patch Cord Damaged - Replaced'})
+   audit=await own()
+   expect(audit).toHaveLength(1)
+   expect(audit[0].ont_replaced).toBe(false)
+   expect(audit[0].issues).toContain('ONT reported but Controller AG is empty')
+   await save(duplicate,small.record.version,{team:''})
+   expect(await own()).toEqual([])
+   expect((await service.tasks(actor)).some(r=>r.ticket_number===ticket)).toBe(false)
+   expect(await tx.query('SELECT row_id FROM service_assurance_responses WHERE ticket_number=$1',[ticket])).toHaveLength(1)
+   throw new Error('service assurance rollback')
+  })).rejects.toThrow('service assurance rollback')
+ },120000)
  it('inventory requests validate, deduct batches atomically and deduplicate retries (rolled back)',async()=>{
   await expect(db.transaction(async tx=>{
    const connection={query:tx.query.bind(tx),transaction:async fn=>fn(tx)} as typeof db;

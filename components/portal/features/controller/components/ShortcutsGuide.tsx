@@ -8,6 +8,7 @@ const sections = [
  {title:'Moving around',rows:[['Move between selected cells','Arrow keys'],['Move left / right between grid cells while editing','Alt+Arrow Left / Alt+Arrow Right'],['Move within text while editing','Arrow Left / Arrow Right'],['Beginning / end of text while editing','Home / End']]},
  {title:'Selecting text',rows:[['Extend text selection while editing','Shift+Arrow Left / Shift+Arrow Right'],['Select all text in the focused input','Ctrl+A']]},
  {title:'Copy and paste text',rows:[['Copy selected text','Ctrl+C'],['Cut selected text while editing','Ctrl+X'],['Paste text into the focused cell','Ctrl+V']]},
+ {title:'Spreadsheet ranges',rows:[['Extend the selected range','Shift+Arrow keys or Shift+Click'],['Jump to a data boundary','Ctrl+Arrow keys'],['Extend to a data boundary','Ctrl+Shift+Arrow keys'],['Select current region / entire table','Ctrl+A (press again for the table)'],['Copy / cut / paste selected cells','Ctrl+C / Ctrl+X / Ctrl+V'],['Copy the top row down through the selection','Ctrl+D'],['Repeat selected values in adjacent cells','Drag the selection fill handle'],['Undo / redo a grid operation','Ctrl+Z / Ctrl+Y or Ctrl+Shift+Z']]},
  {title:'Guide',rows:[['Open / close this guide','Ctrl+/'],['Close this guide','Esc'],['Search this guide','Type in Search shortcuts'],['Print the guide or save a PDF','Print / Save as PDF button']]},
 ];
 const quickStart=[
@@ -24,10 +25,10 @@ const differences=[
  'An invalid edit to an existing record stays as a draft. Technician tasks and reports continue using the last valid official record.',
  'Dates are kept exactly as typed. For validation, use YYYY-MM-DD or DD/MM/YYYY, with HH:mm for time. The grid uses Bahrain time.',
  'Every committed edit saves automatically; there is no Save button. Failed requests retain the text and retry. Uncommitted typing can be cancelled with Esc.',
- 'Delete and Backspace clear one selected cell in Phase 1. While editing, they delete text normally. Multi-cell selection and clearing are coming in Phase 2.',
+ 'Delete and Backspace clear the selected range. While editing, they delete text normally. Clipboard and undo shortcuts affect text while editing and spreadsheet cells while navigating.',
  'Row archiving, column hiding and View > Hidden columns are not available yet.',
 ];
-const unsupported='Not available yet: Name Box, data-edge jumps, multi-cell/range selection, multi-cell paste, fill shortcuts and fill handle, grid undo/redo, row/column insertion or deletion shortcuts, grid find/replace, spreadsheet context menus, and cell formatting. Ctrl+F, Ctrl+H and some other keys may invoke browser features instead. These remain for phases 2–4.';
+const unsupported='Not available: Name Box, formulas and automatic series, row/column insertion or deletion shortcuts, grid find/replace, spreadsheet context menus, and cell formatting. Ctrl+F and Ctrl+H may invoke browser features. Undo history is limited to 50 operations and resets when the grid is reopened.'
 const escapeHtml=(value:string)=>value.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]!));
 
 export default function ShortcutsGuide({userId}:{userId:string}){

@@ -3,4 +3,4 @@ import {db} from '@/lib/db';
 import {ServiceAssurance} from '@/lib/services/service-assurance';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
-export const GET=endpoint(['controller'],({query})=>new ServiceAssurance(db).audit(query.get('project_id')||''));
+export const GET=endpoint(['controller','admin'],({query})=>new ServiceAssurance(db).audit(query.get('project_id')||''));

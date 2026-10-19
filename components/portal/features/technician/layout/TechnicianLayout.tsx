@@ -18,6 +18,7 @@ const TechnicianLayout: React.FC<{children:React.ReactNode}> = ({children}) => {
   };
 
   const navItems = [
+    { label: 'Projects', path: '/technician/projects', icon: <ClipboardCheck className="w-5 h-5" /> },
     { label: 'To-Do', path: '/technician/todo', icon: <ClipboardCheck className="w-5 h-5" /> },
     { label: 'Submitted Orders', path: '/technician/submitted', icon: <History className="w-5 h-5" /> },
   ];

@@ -1,0 +1,813 @@
+{
+  "fields": [
+    {
+      "key": "date",
+      "label": "Date",
+      "storage": "date",
+      "type": "text",
+      "excelColumn": "A"
+    },
+    {
+      "key": "team",
+      "label": "Team",
+      "storage": "team",
+      "type": "technician",
+      "excelColumn": "B"
+    },
+    {
+      "key": "controller",
+      "label": "Controller",
+      "storage": "controller",
+      "type": "text",
+      "excelColumn": "C"
+    },
+    {
+      "key": "ticket_number",
+      "label": "Ticket No",
+      "storage": "ticket_number",
+      "type": "text",
+      "excelColumn": "D"
+    },
+    {
+      "key": "package",
+      "label": "Package",
+      "storage": "package",
+      "type": "text",
+      "excelColumn": "E"
+    },
+    {
+      "key": "assurance_program",
+      "label": "Assurance Program/CX case",
+      "storage": "assurance_program",
+      "type": "text",
+      "excelColumn": "F"
+    },
+    {
+      "key": "exchange",
+      "label": "Exchange",
+      "storage": "exchange",
+      "type": "text",
+      "excelColumn": "G"
+    },
+    {
+      "key": "block",
+      "label": "Block",
+      "storage": "block",
+      "type": "text",
+      "excelColumn": "H"
+    },
+    {
+      "key": "road",
+      "label": "Road",
+      "storage": "road",
+      "type": "text",
+      "excelColumn": "I"
+    },
+    {
+      "key": "building",
+      "label": "Bldg",
+      "storage": "building",
+      "type": "text",
+      "excelColumn": "J"
+    },
+    {
+      "key": "flat",
+      "label": "Flat",
+      "storage": "flat",
+      "type": "text",
+      "excelColumn": "K"
+    },
+    {
+      "key": "fault_description",
+      "label": "Fault Description from LO",
+      "storage": "fault_description",
+      "type": "text",
+      "excelColumn": "L"
+    },
+    {
+      "key": "mobile",
+      "label": "Mobile",
+      "storage": "mobile",
+      "type": "text",
+      "excelColumn": "M"
+    },
+    {
+      "key": "description",
+      "label": "Description",
+      "storage": "description",
+      "type": "text",
+      "excelColumn": "N"
+    },
+    {
+      "key": "service_type",
+      "label": "Service Type (List)",
+      "storage": "service_type",
+      "type": "text",
+      "excelColumn": "O"
+    },
+    {
+      "key": "lo_name",
+      "label": "LO Name (List)",
+      "storage": "lo_name",
+      "type": "text",
+      "excelColumn": "P"
+    },
+    {
+      "key": "creation_datetime",
+      "label": "Creationdate/time",
+      "storage": "creation_datetime",
+      "type": "text",
+      "excelColumn": "Q"
+    },
+    {
+      "key": "assigned_datetime",
+      "label": "Assigned Date/Time",
+      "storage": "assigned_datetime",
+      "type": "text",
+      "excelColumn": "R"
+    },
+    {
+      "key": "close_datetime",
+      "label": "Close Date/Time",
+      "storage": "close_datetime",
+      "type": "text",
+      "excelColumn": "S"
+    },
+    {
+      "key": "sla",
+      "label": "SLA From creation time",
+      "storage": "sla",
+      "type": "text",
+      "excelColumn": "T"
+    },
+    {
+      "key": "kpi",
+      "label": "KPI Status (Automated)",
+      "storage": "kpi",
+      "type": "text",
+      "excelColumn": "U"
+    },
+    {
+      "key": "exceeded_reason",
+      "label": "Reason (If Exceeded)",
+      "storage": "exceeded_reason",
+      "type": "text",
+      "excelColumn": "V"
+    },
+    {
+      "key": "circuit",
+      "label": "Circuit",
+      "storage": "circuit",
+      "type": "text",
+      "excelColumn": "W"
+    },
+    {
+      "key": "status",
+      "label": "Status",
+      "storage": "status",
+      "type": "text",
+      "excelColumn": "X"
+    },
+    {
+      "key": "root_cause",
+      "label": "Root Cause",
+      "storage": "root_cause",
+      "type": "text",
+      "excelColumn": "Y"
+    },
+    {
+      "key": "resolution",
+      "label": "Resolution (List)",
+      "storage": "resolution",
+      "type": "text",
+      "excelColumn": "Z"
+    },
+    {
+      "key": "resolution_description",
+      "label": "Resolution Description",
+      "storage": "resolution_description",
+      "type": "text",
+      "excelColumn": "AA"
+    },
+    {
+      "key": "mims",
+      "label": "MIMS",
+      "storage": "mims",
+      "type": "text",
+      "excelColumn": "AB"
+    },
+    {
+      "key": "faulty",
+      "label": "Faulty/damaged/Approved by BNET/Requested by Customer/ONT not supporting subscribed speed",
+      "storage": "faulty",
+      "type": "text",
+      "excelColumn": "AC"
+    },
+    {
+      "key": "old_model",
+      "label": "Replaced CPE Model",
+      "storage": "old_model",
+      "type": "text",
+      "excelColumn": "AD"
+    },
+    {
+      "key": "old_serial",
+      "label": "Replaced CPE SN",
+      "storage": "old_serial",
+      "type": "text",
+      "excelColumn": "AE"
+    },
+    {
+      "key": "ont_model",
+      "label": "New CPE Model",
+      "storage": "ont_model",
+      "type": "text",
+      "excelColumn": "AF"
+    },
+    {
+      "key": "new_serial",
+      "label": "New CPE SN",
+      "storage": "new_serial",
+      "type": "text",
+      "excelColumn": "AG"
+    },
+    {
+      "key": "protection_box",
+      "label": "ONT Protection Box ",
+      "storage": "protection_box",
+      "type": "text",
+      "excelColumn": "AH"
+    },
+    {
+      "key": "saas_type",
+      "label": "SAAS Type",
+      "storage": "saas_type",
+      "type": "text",
+      "excelColumn": "AI"
+    },
+    {
+      "key": "box_number",
+      "label": "Box Number ",
+      "storage": "box_number",
+      "type": "text",
+      "excelColumn": "AJ"
+    },
+    {
+      "key": "fahad",
+      "label": "Fahad",
+      "storage": "fahad",
+      "type": "text",
+      "excelColumn": "AK"
+    },
+    {
+      "key": "saas_assurance",
+      "label": "saas/assurance",
+      "storage": "saas_assurance",
+      "type": "text",
+      "excelColumn": "AL"
+    },
+    {
+      "key": "physical_verification",
+      "label": "Physical verification",
+      "storage": "physical_verification",
+      "type": "text",
+      "excelColumn": "AM"
+    },
+    {
+      "key": "location",
+      "label": "Location",
+      "storage": "location",
+      "type": "text",
+      "excelColumn": "AN"
+    },
+    {
+      "key": "closed",
+      "label": "Closed",
+      "storage": "closed",
+      "type": "text",
+      "excelColumn": "AO"
+    }
+  ],
+  "response": [
+    "Timestamp",
+    "Team Name",
+    "SR / Ticket number",
+    "ONT Replaced ",
+    "Replaced ONT ",
+    "New ONT Serial No ",
+    "OLD ONT Serial No ",
+    "Patch Chord",
+    "Fiber Termination Box (FTB)",
+    "Pigtail",
+    "Fiber Protection Sleeves",
+    "Cable 2F, SM, Fully Filled, (Internal cable)",
+    "Fiber Termination Box, 2F, SC, Outdoor",
+    "Quick SC/UPC Connector Blue ",
+    "Cable4F, SM, Outdoor (External Cable)",
+    "DRAWROPE",
+    "FIBER CAPPING ",
+    "FIBER CONNECTOR BEND",
+    "CLAMP, D/W NO.10A,(NYLON COATED STEEL WIRE",
+    "CABLE 2F,GPON AERIAL DROP,BTC/1023/FIBER",
+    "BRACKET",
+    "Adaptor ",
+    "Comments and/or questions",
+    "ONT  Power Adaptor",
+    "Email Address",
+    "Invisible Optical cable (1000525)",
+    "FTTR patch Chord",
+    "ATB 2121 SC/APC (1000524)",
+    "FTTR Splitter",
+    "Quick SC/APC Connector Green"
+  ],
+  "resolutions": [
+    "replaced faulty tube sc/upc connector in external ftb",
+    "replaced faulty ont",
+    "patch cord damaged - replaced",
+    "replaced damaged gpon overhead cable",
+    "sc/upc blue connector faulty in external ftb - replaced",
+    "power adaptor replaced",
+    "replaced non faulty ont",
+    "sc/upc blue connector damaged in external ftb - replaced",
+    "sc/upc blue connector damaged in internal ftb - replaced",
+    "replaced faulty sc/upc connector in oh ftb",
+    "replaced damaged internal cable",
+    "sc/upc blue connector faulty in internal ftb - replaced",
+    "mechanical connector faulty in external ftb - replaced",
+    "replaced damaged ont",
+    "replaced old ont",
+    "replaced faulty internal cable",
+    "replaced faulty sc/upc connector in oh ftb/patch cord damaged - replaced",
+    "replaced non faulty",
+    "replaced non-faulty ont",
+    "replaced faulty tube sc/upc connector in internal ftb",
+    "external ftb damaged - replaced",
+    "replaced faulty ont-fttr ont",
+    "mechanical connector damaged in external ftb - replaced",
+    "replaced old ont/patch cord damaged - replaced",
+    "replaced damaged external cable",
+    "internal ftb damaged - replaced",
+    "replaced faulty ont/sc/upc blue connector faulty  in internal ftb - replaced",
+    "replaced faulty gpon overhead cable",
+    "patch cord faulty - replaced",
+    "replaced faulty external cable",
+    "cord wire replaced",
+    "filter replaced",
+    "replaced damaged fiber internal cable 1m - 10m",
+    "replaced damaged fiber internal cable 11m - 20m",
+    "internal ftb faulty - replaced",
+    "replaced damaged fiber internal cable 21m - 50m",
+    "replaced damaged sc/upc connector in oh ftb",
+    "external ftb faulty - replaced",
+    "replaced damaged fiber internal cable 51m - 100m",
+    "replaced damaged fiber internal cable 150m",
+    "replaced damaged fiber internal cable 200m",
+    "replaced damaged fiber internal cable 201m - 250m",
+    "mechanical connector faulty in internal ftb - replaced",
+    "1 - q ont / q2 ont does not support speed\n\nmention in the online sheet: old ont replaced instead of faulty\nroot cause: old ont replaced\ngeneral remarks: old ont replaced does not support speed.",
+    "mechanical connector damaged in internal ftb - replaced",
+    "2 - h ont (voice to internet)\nmention in the online sheet: ont replaced\nin pronto root cause: ont replaced\ngeneral remarks: voice to internet"
+  ],
+  "columns": [
+    {
+      "column": "A",
+      "code": "Item No",
+      "unit": "Unit",
+      "label": "Fault Number"
+    },
+    {
+      "column": "B",
+      "code": "",
+      "unit": "",
+      "label": "Ticket"
+    },
+    {
+      "column": "C",
+      "code": "",
+      "unit": "",
+      "label": "Fault Type"
+    },
+    {
+      "column": "D",
+      "code": "",
+      "unit": "",
+      "label": "Close Type"
+    },
+    {
+      "column": "E",
+      "code": "",
+      "unit": "",
+      "label": "Fault Clearnes Code"
+    },
+    {
+      "column": "F",
+      "code": "10000276",
+      "unit": "Meter",
+      "label": "Cable4F,SM,Outdoor(4F/Tube),GPON2"
+    },
+    {
+      "column": "G",
+      "code": "1000079",
+      "unit": "Meter",
+      "label": "DRAWROPE,NO.1 500M/ 0.6 MM, BT 071830 CW"
+    },
+    {
+      "column": "H",
+      "code": "1000084",
+      "unit": "piece",
+      "label": "FIBER CAPPING"
+    },
+    {
+      "column": "I",
+      "code": "1000085",
+      "unit": "piece",
+      "label": "FIBER CONNECTOR BEND"
+    },
+    {
+      "column": "J",
+      "code": "1000105",
+      "unit": "piece",
+      "label": "Fiber Termination Box, 2F, SC,In/Outdoor"
+    },
+    {
+      "column": "K",
+      "code": "1000087",
+      "unit": "piece",
+      "label": "Fiber Mechanical Splice, 1F, SM/MM"
+    },
+    {
+      "column": "L",
+      "code": "10000466",
+      "unit": "piece",
+      "label": "Bare Fiber Sleeves, Protection Sleeve-Single 60mm"
+    },
+    {
+      "column": "M",
+      "code": "None",
+      "unit": "piece",
+      "label": "Heat Shrink for External Cables"
+    },
+    {
+      "column": "N",
+      "code": "1000086",
+      "unit": "piece",
+      "label": "FIBER HOUSE TERMINATION BOX,1F,SM,INDO"
+    },
+    {
+      "column": "O",
+      "code": "1000021",
+      "unit": "piece",
+      "label": "BRACKET,NO.22,011114"
+    },
+    {
+      "column": "P",
+      "code": "1000067",
+      "unit": "piece",
+      "label": "CLAMP,D/W NO.10A,(NYLON COATED STEEL WIR"
+    },
+    {
+      "column": "Q",
+      "code": "1000187",
+      "unit": "piece",
+      "label": "Quick SC/UPC Connector Blue for GPON"
+    },
+    {
+      "column": "R",
+      "code": "1000040",
+      "unit": "piece",
+      "label": "CABLE 2F,GPON AERIAL DROP,BTC/1023/FIBER"
+    },
+    {
+      "column": "S",
+      "code": "1000087",
+      "unit": "piece",
+      "label": "Fiber Mechanical Splice, 1F, SM/MM2"
+    },
+    {
+      "column": "T",
+      "code": "1000187",
+      "unit": "piece",
+      "label": "Quick SC/UPC Connector Blue for GPON2"
+    },
+    {
+      "column": "U",
+      "code": "1000086",
+      "unit": "piece",
+      "label": "FIBER HOUSE TERMINATION BOX,1F,SM,INDO2"
+    },
+    {
+      "column": "V",
+      "code": "1000185",
+      "unit": "Kit",
+      "label": "QUICK SC CONNECTOR KIT FOR SM FIBRE"
+    },
+    {
+      "column": "W",
+      "code": "1000104",
+      "unit": "piece",
+      "label": "BNET-PIGTAIL-SM-SC/UPC-UNIVERSAL"
+    },
+    {
+      "column": "X",
+      "code": "1000041",
+      "unit": "Meter",
+      "label": "Cable2F,SM,Fully Filled,BTC/1021/Fibre"
+    },
+    {
+      "column": "Y",
+      "code": "10000276",
+      "unit": "Meter",
+      "label": "Cable4F,SM,Outdoor(4F/Tube),GPON2"
+    },
+    {
+      "column": "Z",
+      "code": "",
+      "unit": "piece",
+      "label": "Quick SC/UPC Connector Green for GPON"
+    },
+    {
+      "column": "AA",
+      "code": "1000001",
+      "unit": "piece",
+      "label": "ADAPTER, SIMPLEX SC, BLUE PLASTIC"
+    },
+    {
+      "column": "AB",
+      "code": "1000092",
+      "unit": "piece",
+      "label": "FIBER PATCH CORD,SC/SCSM, DUPLEX, 4M"
+    },
+    {
+      "column": "AC",
+      "code": "1000098",
+      "unit": "piece",
+      "label": "FIBER PATCH CORD,SC/LC SM, DUPLEX,4M"
+    },
+    {
+      "column": "AD",
+      "code": "None",
+      "unit": "Meter",
+      "label": "20mm Piping"
+    },
+    {
+      "column": "AE",
+      "code": "None",
+      "unit": "Meter",
+      "label": "W5 Retrieved"
+    },
+    {
+      "column": "AF",
+      "code": "10000471",
+      "unit": "piece",
+      "label": "ONT - Bnet WiFi 6"
+    },
+    {
+      "column": "AG",
+      "code": "",
+      "unit": "piece",
+      "label": "ONT - Bnet H5"
+    },
+    {
+      "column": "AH",
+      "code": "1000148",
+      "unit": "piece",
+      "label": "ONT -2G"
+    },
+    {
+      "column": "AI",
+      "code": "1000172",
+      "unit": "piece",
+      "label": "Patch Cord SC -SC 3 m"
+    },
+    {
+      "column": "AJ",
+      "code": "1000022",
+      "unit": "Meter",
+      "label": "CABLE DROPWIRE NO.10, CW1411"
+    },
+    {
+      "column": "AK",
+      "code": "1000042",
+      "unit": "Meter",
+      "label": "CABLE,2PR/0.5MM,TWISTED TCW PVC INSUL.WH"
+    },
+    {
+      "column": "AL",
+      "code": "1000541",
+      "unit": "Meter",
+      "label": "CABLE,2 PR/0.5MM ,LEADING_IN SP1068"
+    },
+    {
+      "column": "AM",
+      "code": "1000553",
+      "unit": "Meter",
+      "label": "JUMPER,2W/0.5,7000SERIES,(BLU/YL) 400M"
+    },
+    {
+      "column": "AN",
+      "code": "1000067",
+      "unit": "piece",
+      "label": "CLAMP,D/W NO.10A,(NYLON COATED STEEL WIR2"
+    },
+    {
+      "column": "AO",
+      "code": "1000021",
+      "unit": "piece",
+      "label": "BRACKET,NO.22,0111142"
+    },
+    {
+      "column": "AP",
+      "code": "1001965",
+      "unit": "EA",
+      "label": "PLUG 4-WIRE 6-POS AMERICAN TYPE WE4 LINE"
+    },
+    {
+      "column": "AQ",
+      "code": "1001968",
+      "unit": "EA",
+      "label": "B.S PLUG 431A"
+    },
+    {
+      "column": "AR",
+      "code": "1004110",
+      "unit": "EA",
+      "label": "CONNECTOR,3M UR2 RED(IN CARTRIDGES)"
+    },
+    {
+      "column": "AS",
+      "code": "1004400",
+      "unit": "EA",
+      "label": "BOX PLASTIC PVC,3X3\"(FOR LINE JACK UNIT)"
+    },
+    {
+      "column": "AT",
+      "code": "1004425",
+      "unit": "EA",
+      "label": "JACK LINE,UNIT 3/4A,MASTER (WITH LOGO)"
+    },
+    {
+      "column": "AU",
+      "code": "1004428",
+      "unit": "EA",
+      "label": "JACK,4/4A,MASTER,(WITH BATELCO LOGO)"
+    },
+    {
+      "column": "AV",
+      "code": "1000214",
+      "unit": "EA",
+      "label": "TP-LINK ARCHER VR600 AC1600"
+    },
+    {
+      "column": "AW",
+      "code": "",
+      "unit": "",
+      "label": "ONT S/N"
+    },
+    {
+      "column": "AX",
+      "code": "",
+      "unit": "",
+      "label": "ONT Reservation No. \n4910000924"
+    },
+    {
+      "column": "AY",
+      "code": "",
+      "unit": "",
+      "label": "Add Noted"
+    },
+    {
+      "column": "AZ",
+      "code": "",
+      "unit": "",
+      "label": "Lines  + Ont count "
+    }
+  ],
+  "mapping": {
+    "F": 14,
+    "G": 15,
+    "H": 16,
+    "I": 17,
+    "J": 12,
+    "L": 10,
+    "N": 8,
+    "O": 20,
+    "P": 18,
+    "Q": 13,
+    "R": 19,
+    "W": 9,
+    "X": 11,
+    "Z": 29,
+    "AA": 21,
+    "AI": 7
+  },
+  "groups": [
+    [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "GPON Last Mile",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "GPON Assurance",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "Copper Assurace",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "ONT Details",
+      "",
+      "",
+      ""
+    ],
+    [
+      "",
+      "",
+      "",
+      "",
+      "",
+      "Underground Materials",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "Overhead Material",
+      "",
+      "",
+      "",
+      "In Building Materials",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "Internal Wiring Materials",
+      "",
+      "Last Point Materials",
+      "",
+      "",
+      "",
+      "Copper Materials",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "Remarks",
+      ""
+    ]
+  ]
+}
