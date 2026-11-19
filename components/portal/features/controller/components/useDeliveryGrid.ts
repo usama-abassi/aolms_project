@@ -1,4 +1,6 @@
 'use client';
+import {recordMonth} from '@/lib/services/google-sheets/sync-model';
+import {supabase} from '@/lib/supabase-browser';
 import {useEffect,useRef,useState} from 'react';
 import {api,ticketDraft,type Ticket,type Field,type Draft} from '../../assurance/api';
 import {randomId} from '../../../lib/uuid';
@@ -7,16 +9,19 @@ import {type CellWrite,type CellChange} from './spreadsheet-selection'
 
 export type ServerDraft={user_id:string;id:string;project_id:string;raw_values:Record<string,string>;errors:Record<string,string>;version:number;own_version?:number;record_version:number|null;state:'draft'|'record';mutation_id:string};
 export type GridRow={id:string;values:Record<string,string>;base_version:number|null;draft_version:number;state:string;errors:Record<string,string>;record?:Ticket;pending:Array<{values:Record<string,string>;mutation_id:string}>};
-export type GridConfig={manual?:boolean;recordsPath?:string;gridPath?:string};
+export type GridConfig={month?:string;manual?:boolean;recordsPath?:string;gridPath?:string};
 export function useDeliveryGrid(projectId:string,userId:string,fields:Field[],tickets:Ticket[],drafts:ServerDraft[],technicians:Array<{id:string;full_name:string}>,config:GridConfig={}){
  const recordsPath=config.recordsPath||'/assurance-tickets',gridPath=config.gridPath||'/assurance-tickets/grid';
- const key=`aolms:${config.manual?'service-assurance':'delivery-grid'}:v2:${userId}:${projectId}`;
+ const key=`aolms:${config.manual?'service-assurance':'delivery-grid'}:v2:${userId}:${projectId}${config.month?':'+config.month:''}`;
  const [error,setError]=useState('');
  const [,render]=useState(0);
  const snapshot=useRef<string|null>(null),blocked=useRef(false),mounted=useRef(true),busy=useRef(new Set<string>());
+ const remoteQueue=useRef(new Map<string,any>()),receiveRemote=useRef<((remote:any)=>void)|null>(null);
  const editingCache=useRef<Record<string,Record<string,string>>>({});
  const [hasRecovery,setHasRecovery]=useState(false);
  const rows=useRef<GridRow[]|null>(null);
+ const saveTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
+ function schedule(){if(saveTimer.current)clearTimeout(saveTimer.current);saveTimer.current=setTimeout(()=>{const cached=editingCache.current;editingCache.current={};if(Object.keys(cached).length)setHasRecovery(false);for(const [id,values] of Object.entries(cached)){for(const [field,value] of Object.entries(values))commit(id,field,value);}retry();},2000);}
  const reviewed=useRef(new Map<string,{record:Ticket|undefined;version:number}>());
  const stored=(row:GridRow)=>!!row.record||row.base_version!==null||row.draft_version>0||busy.current.has(row.id);
  const meaningful=(row:GridRow)=>stored(row)||hasCellData(row.values);
@@ -29,7 +34,7 @@ export function useDeliveryGrid(projectId:string,userId:string,fields:Field[],ti
  }
  if(!rows.current){
   const map=new Map(tickets.map(t=>{
-   const values=ticketDraft(t,fields).values;
+   const values={...Object.fromEntries(Object.entries(t).filter(([key,value])=>key.startsWith('sheet_')&&typeof value==='string')),...ticketDraft(t,fields).values} as Record<string,string>;
    values.technician_id=String(t.technician_name||technicians.find(p=>p.id===t.technician_id)?.full_name||t.technician_id||'');
    return [t.id,{id:t.id,values,record:t,base_version:t.version,draft_version:0,state:'record',errors:{},pending:[]}] as [string,GridRow];
   }));
@@ -71,7 +76,7 @@ export function useDeliveryGrid(projectId:string,userId:string,fields:Field[],ti
     row.pending.shift();persist();update();
    }
   }catch(e){row.state='pending';row.errors={...row.errors,_save:(e as Error).message};persist();update();}
-  finally{busy.current.delete(id);}
+  finally{busy.current.delete(id);const remote=remoteQueue.current.get(id);remoteQueue.current.delete(id);if(remote)receiveRemote.current?.(remote);}
  }
  function commitMany(writes:CellWrite[]){
   const changes:CellChange[]=[],affected=new Set<string>()
@@ -101,13 +106,12 @@ export function useDeliveryGrid(projectId:string,userId:string,fields:Field[],ti
     continue
    }
    const task={values:{...row.values},mutation_id:randomId()}
-   if(config.manual)row.pending.splice(busy.current.has(id)?1:0,row.pending.length,task)
-   else row.pending.push(task)
+   row.pending.splice(busy.current.has(id)?1:0,row.pending.length,task)
    row.state='pending'
   }
   normalize()
   update()
-  if(persist()&&!config.manual)for(const id of affected)void drain(id)
+  if(persist())schedule()
   return changes
  }
  function commit(id:string,field:string,value:string){commitMany([{id,key:field,value}])}
@@ -117,7 +121,7 @@ export function useDeliveryGrid(projectId:string,userId:string,fields:Field[],ti
  function cache(id:string,field:string,value:string|null){
   if(value===null){delete editingCache.current[id]?.[field];}else editingCache.current[id]={...editingCache.current[id],[field]:value};
   if(!Object.keys(editingCache.current[id]||{}).length||(!hasCellData(editingCache.current[id]||{})&&!meaningful(rows.current!.find(row=>row.id===id)!)))delete editingCache.current[id];
-  const changed=normalize(id);persist();if(changed)update();
+  const changed=normalize(id);persist();if(changed)update();if(value!==null)schedule();
  }
  function recover(){
   setHasRecovery(false);
@@ -140,16 +144,34 @@ export function useDeliveryGrid(projectId:string,userId:string,fields:Field[],ti
   row.record=current.record;row.base_version=current.record?.version??null;row.draft_version=current.version;
   row.pending=[{values:{...row.values},mutation_id:randomId()}];row.errors={};row.state='pending';
   reviewed.current.delete(id);
-  update();if(persist()&&!config.manual)void drain(id);
+  update();if(persist())schedule();
  }
  useEffect(()=>{
   mounted.current=true;
-  if(config.manual)return()=>{mounted.current=false;};
-  retry();
+
+  schedule();
   const online=()=>retry();window.addEventListener('online',online);
   const interval=setInterval(retry,10000);
-  return()=>{mounted.current=false;window.removeEventListener('online',online);clearInterval(interval);};
+  return()=>{mounted.current=false;if(saveTimer.current)clearTimeout(saveTimer.current);window.removeEventListener('online',online);clearInterval(interval);};
  },[]);
+ useEffect(()=>{
+  if(!supabase)return;
+  receiveRemote.current=(remote:any)=>{
+   const existing=rows.current!.find(r=>r.id===remote.id);
+   if(existing&&Number(remote.version)<=Number(existing.base_version))return;
+   if(busy.current.has(remote.id)){const mutation=remote.mutation_id||remote.last_mutation_id;if(mutation!==existing?.pending[0]?.mutation_id)remoteQueue.current.set(remote.id,remote);return;}
+   if(existing&&(existing.pending.length||Object.keys(editingCache.current[remote.id]||{}).length)){existing.errors={...existing.errors,_save:'This row changed elsewhere. Review the latest record before retrying.'};reviewed.current.set(remote.id,{record:undefined,version:existing.draft_version});update();return;}
+   const record=(recordsPath==='/service-assurance'?{...remote.raw_values,...remote,spreadsheet_fields:{}}:remote) as Ticket;
+   const values=recordsPath==='/service-assurance'?{...remote.raw_values}:ticketDraft(record,fields).values;
+   if(recordsPath!=='/service-assurance')values.technician_id=technicians.find(t=>t.id===remote.technician_id)?.full_name||remote.technician_id||'';
+   if(config.month&&recordMonth(values[recordsPath==='/service-assurance'?'date':'work_date']||'')!==config.month){if(existing)rows.current=rows.current!.filter(r=>r.id!==remote.id);normalize();update();return;}
+   const next:GridRow={id:remote.id,values,base_version:remote.version,draft_version:existing?.draft_version||0,state:'record',errors:{},record,pending:[]};
+   if(existing)Object.assign(existing,next);else rows.current!.push(next);
+   normalize();update();
+  };
+  const channel=supabase.channel(`grid:${projectId}:${userId}`).on('postgres_changes',{event:'*',schema:'public',table:recordsPath==='/service-assurance'?'service_assurance_rows':'assurance_tickets',filter:`project_id=eq.${projectId}`},payload=>{if(payload.eventType!=='DELETE')receiveRemote.current?.(payload.new);}).subscribe();
+  return()=>{receiveRemote.current=null;void supabase!.removeChannel(channel);};
+ },[projectId,userId,recordsPath,config.month]);
  function exportDraft(){
   const url=URL.createObjectURL(new Blob([JSON.stringify({rows:rows.current!.filter(row=>meaningful(row)||hasCellData(editingCache.current[row.id]||{})),editing:editingCache.current},null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=config.manual?'service-assurance-drafts.json':'service-delivery-drafts.json';link.click();URL.revokeObjectURL(url);
  }

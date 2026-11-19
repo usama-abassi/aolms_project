@@ -12,7 +12,7 @@ export default function PlainTextCell({value,label,cell,readOnly,error,onCommit,
  const direct=useRef(false);
  const caret=useRef<number|null>(null);
  useLayoutEffect(()=>{if(caret.current!==null){input.current?.setSelectionRange(caret.current,caret.current);caret.current=null;}});
- useEffect(()=>{if(!editingRef.current){setText(value);buffer.current=value;}},[value]);
+ useEffect(()=>{if(!editingRef.current){setText(value);buffer.current=value;}else{original.current=value;}},[value]);
  function start(next=value,directTyping=false){
   if(readOnly)return;
   direct.current=directTyping;caret.current=next.length;original.current=value;buffer.current=next;editingRef.current=true;setEditing(true);setText(next);onCache(next);

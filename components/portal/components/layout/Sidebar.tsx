@@ -13,12 +13,16 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse, navItems }) => {
   const pathname = usePathname();
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isMobile, setIsMobile] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const expanded = isMobile ? !isCollapsed : hovered || focused;
 
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
     };
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -33,7 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse,
   }, [isMobile, isCollapsed, onToggleCollapse]);
 
   return (
-    <>
+    <div className="relative w-16 shrink-0">
     {isMobile && !isCollapsed && (
       <button
         type="button"
@@ -44,17 +48,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse,
     )}
     <aside
       id="main-sidebar"
-      inert={isMobile && isCollapsed}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onPointerDownCapture={() => setFocused(false)}
+      onFocusCapture={event => setFocused(event.target.matches(':focus-visible'))}
+      onBlurCapture={event => { if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false); }}
       className={cn(
-        'fixed md:sticky top-0 left-0 h-screen z-50 md:z-20 shrink-0 border-r border-neutral-200 dark:border-neutral-700',
+        'fixed top-0 left-0 h-screen z-50 shrink-0 border-r border-neutral-200 dark:border-neutral-700 transition-[width] duration-200 motion-reduce:transition-none overflow-hidden',
         'bg-white dark:bg-neutral-900',
-        isCollapsed ? 'invisible w-64 -translate-x-full md:visible md:translate-x-0 md:w-16' : 'visible w-64',
+        expanded ? 'w-64 shadow-lg' : 'w-16',
       )}
     >
       <div className="flex flex-col h-full">
         {/* Branding */}
-        <div className={cn('flex h-16 items-center border-b border-neutral-200 dark:border-neutral-700', isCollapsed ? 'justify-center px-2' : 'justify-between px-4')}>
-          {!isCollapsed && <Link href="/" onClick={() => { if (isMobile) onToggleCollapse(); }} className="flex items-center gap-2" aria-label="AOLMS Home">
+        <div className={cn('flex h-16 items-center border-b border-neutral-200 dark:border-neutral-700', !expanded ? 'justify-center px-2' : 'justify-between px-4')}>
+          {expanded && <Link href="/" onClick={() => { if (isMobile) onToggleCollapse(); }} className="flex items-center gap-2" aria-label="AOLMS Home">
             <span className="text-h5 font-semibold text-neutral-900 dark:text-neutral-50">
               AOLMS
             </span>
@@ -62,12 +70,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse,
           <button
             type="button"
             onClick={onToggleCollapse}
-            className="p-2 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            aria-expanded={!isCollapsed}
+            className="p-2 rounded-md hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors md:hidden"
+            aria-label={!expanded ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-expanded={expanded}
             aria-controls="main-sidebar"
           >
-            {isCollapsed ? (
+            {!expanded ? (
               <ChevronRight className="w-6 h-6 text-neutral-600 dark:text-neutral-400" aria-hidden="true" />
             ) : (
               <ChevronLeft className="w-6 h-6 text-neutral-600 dark:text-neutral-400" aria-hidden="true" />
@@ -77,13 +85,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse,
 
         <nav className="flex-1 overflow-y-auto px-2 py-4" aria-label="Main navigation">
           {navItems.map((item) => (
-            item.disabled ? <div key={item.path} aria-disabled="true" title="Not available yet" className="flex cursor-not-allowed items-center gap-3 px-3 py-2.5 text-sm text-neutral-400 opacity-60"><span className="h-5 w-5 shrink-0">{item.icon}</span>{!isCollapsed && item.label}</div> :
+            item.disabled ? <div key={item.path} aria-disabled="true" title="Not available yet" className="flex cursor-not-allowed items-center gap-3 px-3 py-2.5 text-sm text-neutral-400 opacity-60"><span className="h-5 w-5 shrink-0">{item.icon}</span>{expanded && <span className="whitespace-nowrap">{item.label}</span>}</div> :
             <Link
               key={item.path}
               href={item.path}
-              onClick={() => { if (isMobile && !isCollapsed) onToggleCollapse(); }}
+              onClick={() => { setFocused(false); if (isMobile && !isCollapsed) onToggleCollapse(); }}
               aria-label={item.label}
-              title={isCollapsed ? item.label : undefined}
+              title={!expanded ? item.label : undefined}
               className={cn(
                 'mb-1 flex min-h-[44px] items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 pathname === item.path
@@ -93,13 +101,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse,
               aria-current={pathname === item.path ? 'page' : undefined}
             >
               <span className="w-5 h-5 flex-shrink-0" aria-hidden="true">{item.icon}</span>
-              {!isCollapsed && item.label}
+              {expanded && <span className="whitespace-nowrap">{item.label}</span>}
             </Link>
           ))}
         </nav>
 
       </div>
     </aside>
-    </>
+    </div>
   );
 };

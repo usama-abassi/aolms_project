@@ -1,4 +1,5 @@
 import 'server-only';
+import {dynamicKeys} from '../google-sheets/dynamic-fields';
 import {Database} from '@/lib/db';
 import {BadRequestException,ConflictException,ForbiddenException,NotFoundException} from '@/lib/http';
 import {managerOnly,uuid,type Actor} from '../assurance-tickets/assurance-tickets.service';
@@ -11,7 +12,8 @@ export class ServiceDelivery {
  async metadata(actor:Actor){managerOnly(actor);return {technicians:await this.db.query("SELECT id,full_name FROM profiles WHERE role='technician' AND is_active ORDER BY full_name")};}
  async saveOrder(body:any,actor:Actor){
   managerOnly(actor);const id=uuid(body.id),project=uuid(body.project_id),mutation=uuid(body.mutation_id);
-  const values=this.validate(body.values,controllerFields);
+  const keys=(await dynamicKeys(this.db,project,body.values?.work_date)).filter(key=>Object.hasOwn(body.values||{},key));
+  const values=this.validate(body.values,[...controllerFields,...keys.map(key=>({key,label:key,type:'text'}))]);
   if(!values.work_date||!values.ticket_number||!values.actioned)throw new BadRequestException('Date, Order and Actioned are required');
   for(const f of controllerFields)if(values[f.key]&&['date','datetime-local'].includes(f.type)){const date=gridDate(values[f.key],f.type==='datetime-local');if(!date)throw new BadRequestException(`Invalid ${f.label}`);values[f.key]=date;}
   return this.db.transaction(async tx=>{
@@ -21,7 +23,7 @@ export class ServiceDelivery {
    if(old?.last_mutation_id===mutation)return old;
    if(old&&(old.project_id!==project||old.version!==body.base_version)||!old&&body.base_version!=null)throw new ConflictException('Order changed. Refresh and review your retained draft.');
    if(values.technician_id){const [tech]=await tx.query("SELECT id FROM profiles WHERE id=$1 AND role='technician' AND is_active FOR SHARE",[uuid(values.technician_id)]);if(!tech)throw new BadRequestException('Team must be an active Technician');}
-   const extra={...old?.spreadsheet_fields,delivery:values,wbs_type:values.order_type,wbs_connection_type:values.connection_type,new_ont_sn:values.nce_sn};
+   const extra={...old?.spreadsheet_fields,delivery:{...old?.spreadsheet_fields?.delivery,...values},wbs_type:values.order_type,wbs_connection_type:values.connection_type,new_ont_sn:values.nce_sn};
    // Resolved remains the internal legacy state; eligibility also checks the exact Actioned value.
    const fields:any={project_id:project,ticket_number:values.ticket_number,work_date:values.work_date,technician_id:values.technician_id||null,controller_id:old?.controller_id||actor.userId,status:norm(values.actioned)==='delivered'?'Resolved':'Open',spreadsheet_fields:JSON.stringify(extra),last_mutation_id:mutation};
    for(const k of ['exchange','mobile','lo_name','circuit','block','road','building','flat','package'])fields[k]=values[k]||null;

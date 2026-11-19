@@ -1,7 +1,7 @@
 import 'server-only';
 import { Pool, type PoolClient } from 'pg';
 import { attachDatabasePool } from '@vercel/functions';
-import {createHash} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 
 const globalDb=globalThis as typeof globalThis & {aolmsPool?:Pool;aolmsPoolConfig?:string};
 export function getPool(){
@@ -24,6 +24,12 @@ export class Database {
  constructor(private client?:PoolClient){}
  async query(sql:string,values?:any[]):Promise<any[]>{return (await (this.client||getPool()).query(sql,values)).rows;}
  async transaction<T>(work:(db:Database)=>Promise<T>):Promise<T>{
+  if(this.client){
+   const name='nested_'+randomUUID().replace(/-/g,'');
+   await this.client.query(`SAVEPOINT ${name}`);
+   try{const result=await work(this);await this.client.query(`RELEASE SAVEPOINT ${name}`);return result;}
+   catch(error){await this.client.query(`ROLLBACK TO SAVEPOINT ${name}`);await this.client.query(`RELEASE SAVEPOINT ${name}`);throw error;}
+  }
   const client=await getPool().connect();
   try{await client.query('BEGIN');const result=await work(new Database(client));await client.query('COMMIT');return result;}
   catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}

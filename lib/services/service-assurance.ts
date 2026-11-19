@@ -1,4 +1,5 @@
 import 'server-only';
+import {dynamicKeys} from './google-sheets/dynamic-fields';
 import {Database} from '@/lib/db';
 import {uuid} from '@/lib/api';
 import {type Actor} from '@/lib/auth';
@@ -26,7 +27,8 @@ export class ServiceAssurance{
  async save(body:any,actor:Actor){
   const id=uuid(body?.id),projectId=uuid(body?.project_id),mutation=uuid(body?.mutation_id);
   if(body.base_version!==null&&(!Number.isInteger(body.base_version)||body.base_version<1))throw new BadRequestException('Record version is required');
-  const values=textValues(body.values,serviceAssuranceFields.map(f=>f.key));
+  const keys=(await dynamicKeys(this.db,projectId,body.values?.date)).filter(key=>Object.hasOwn(body.values||{},key));
+  const values=textValues(body.values,[...serviceAssuranceFields.map(f=>f.key),...keys]);
   return this.db.transaction(async tx=>{
    await this.project(projectId,tx)
    await tx.query('SELECT id FROM projects WHERE id=$1 FOR UPDATE',[projectId])

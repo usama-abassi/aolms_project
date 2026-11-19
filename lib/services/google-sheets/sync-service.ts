@@ -1,0 +1,122 @@
+import 'server-only';
+import {randomUUID,createHash} from 'node:crypto';
+import {db} from '@/lib/db';
+import {type Actor} from '@/lib/auth';
+import {BadRequestException,ConflictException} from '@/lib/http';
+import {uuid} from '@/lib/api';
+import {controllerFields,orderValues} from '../service-delivery/model';
+import {serviceAssuranceFields} from '@/lib/service-assurance-fields';
+import {ServiceDelivery} from '../service-delivery/service';
+import {ServiceAssurance} from '../service-assurance';
+import {GoogleSheetsClient} from './google-client';
+import {stageProposals} from './proposal-gateway';
+import {SheetReader} from './sheet-reader';
+import {gridDate} from '../assurance-tickets/grid-values';
+import {recordMonth,mergeCells,sameValues,type Values,type SyncColumn} from './sync-model';
+const fingerprint=(v:unknown)=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
+export class SheetSyncService{
+ async run(id:string,actor:Actor){
+  uuid(id);
+  // A session advisory lock serializes a whole run, including Google calls and local commits.
+  return db.transaction(async lock=>{
+   await lock.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',['configuration:'+id]);
+   const [c]=await lock.query(`SELECT c.*,p.code,to_char(c.month,'YYYY-MM') month_key FROM sheet_configurations c JOIN projects p ON p.id=c.project_id WHERE c.id=$1 AND c.deleted_at IS NULL`,[id]);
+   if(!c)throw new BadRequestException('Configuration not found');
+   const [guard]=await lock.query('SELECT pg_try_advisory_xact_lock(hashtextextended($1,0)) locked',['sheet-sync:'+c.spreadsheet_id]);
+   if(!guard.locked)return {status:'already_running'};
+   if(c.sync_status==='review_required')throw new ConflictException('Synchronization identifiers need review before retrying');
+   const [log]=await db.query('INSERT INTO sheet_sync_logs(configuration_id) VALUES($1) RETURNING id',[id]);
+   await db.query("UPDATE sheet_configurations SET last_attempt_at=now(),sync_status='running',latest_error=NULL WHERE id=$1",[id]);
+   try{
+    const result=await this.process(c,actor);
+    const staged=await stageProposals(c);
+    Object.assign(result,{proposals_staged:staged});
+    await db.query("UPDATE sheet_configurations SET last_success_at=now(),last_checked_at=now(),sync_status='success',latest_error=NULL WHERE id=$1",[id]);
+    await db.query("UPDATE sheet_sync_logs SET finished_at=now(),status='success',details=$2 WHERE id=$1",[log.id,JSON.stringify(result)]);
+    return result;
+   }catch(error){
+    const message=error instanceof Error?error.message:'Synchronization failed';
+    await db.query("UPDATE sheet_configurations SET sync_status=$2,latest_error=$3 WHERE id=$1",[id,message.startsWith('Identity review:')?'review_required':'error',message]);
+    await db.query("UPDATE sheet_sync_logs SET finished_at=now(),status='error',details=$2 WHERE id=$1",[log.id,JSON.stringify({message})]);
+    throw error;
+   }
+  });
+ }
+ private async process(c:any,actor:Actor){
+  const delivery=c.code==='SERVICE_ASSURANCE',assurance=c.code==='SERVICE_DELIVERY';
+  if(!delivery&&!assurance)throw new BadRequestException('This project has no existing controller workflow adapter');
+  const fields=delivery?controllerFields:serviceAssuranceFields,dateKey=delivery?'work_date':'date';
+  const all=delivery?await db.query(`SELECT t.*,p.full_name technician_name,c.full_name controller_name FROM assurance_tickets t LEFT JOIN profiles p ON p.id=t.technician_id LEFT JOIN profiles c ON c.id=t.controller_id WHERE t.project_id=$1 AND t.work_date >= $2::date AND t.work_date < ($2::date+interval '1 month') ORDER BY t.id`,[c.project_id,c.month_key+'-01']):(await db.query(`SELECT * FROM service_assurance_rows WHERE project_id=$1 AND (left(raw_values->>'date',7)=$2 OR raw_values->>'date' ~ $3)`,[c.project_id,c.month_key,`^[0-9]{1,2}/0?${Number(c.month_key.slice(5))}/${c.month_key.slice(0,4)}$`])).map(r=>({...r.raw_values,id:r.id,project_id:r.project_id,version:r.version}));
+  const locals=new Map<string,{record:any;values:Values}>();
+  for(const record of all){const values=delivery?{...orderValues(record),...record.spreadsheet_fields?.delivery}:Object.fromEntries([...serviceAssuranceFields.map(f=>f.key),...(c.columns as SyncColumn[]).map(x=>x.key)].filter(k=>typeof record[k]==='string').map(k=>[k,String(record[k]??'')]));if((delivery?String(record.work_date instanceof Date?record.work_date.toISOString().slice(0,10):record.work_date).slice(0,7):recordMonth(values[dateKey]))===c.month_key)locals.set(record.id,{record,values});}
+  const google=new GoogleSheetsClient(),revision=await google.revision(c.spreadsheet_id);
+  const snapshots=await db.query('SELECT * FROM sheet_sync_records WHERE configuration_id=$1',[c.id]);
+  const byId=new Map(snapshots.map(s=>[s.record_id,s]));
+  if(String(revision.version)===c.remote_revision){await this.proposals(c,locals,byId);return {status:'unchanged',records:0};}
+  const reader=new SheetReader(google),sheet=await reader.read(c.spreadsheet_id,c.tab_name,fields,snapshots.length===0);
+  if(!sheet.columns.some(x=>x.key===dateKey)&&!snapshots.length)throw new BadRequestException('Initial import requires the controller Date column for monthly routing');
+  const technicians=await db.query("SELECT id,full_name FROM profiles WHERE role='technician' AND is_active");
+  const teamKey=delivery?'technician_id':'team';
+  for(const row of sheet.rows){
+   if(delivery&&row.values[dateKey]){const date=gridDate(row.values[dateKey],false);if(date)row.values[dateKey]=date;}
+   const team=row.values[teamKey];
+   if(team){const matches=technicians.filter(t=>t.id===team||t.full_name.trim().toLowerCase()===team.trim().toLowerCase());if(matches.length!==1)throw new BadRequestException('Sheet Team must identify one active technician: '+team);row.values[teamKey]=matches[0].id;}
+  }
+  const assignments:Array<{index:number;id:string}>=[],seen=new Set<string>();
+  for(const row of sheet.rows){
+   const month=recordMonth(row.values[dateKey]||locals.get(row.id)?.values[dateKey]||'');
+   if(!month)throw new BadRequestException(`Row ${row.index+1} has no valid controller Date. Use YYYY-MM-DD or DD/MM/YYYY.`);
+   if(month!==c.month_key){if(byId.has(row.id))throw new ConflictException('A synchronized row moved to another month. Review its Date and configuration before retrying.');continue;}
+   if(!row.id){
+    const candidates=[...locals].filter(([,l])=>!!row.values.ticket_number?.trim()&&l.values.ticket_number?.trim()===row.values.ticket_number.trim()&&gridDate(l.values[dateKey],false)===gridDate(row.values[dateKey],false));
+    if(candidates.length>1)throw new BadRequestException('Multiple existing records match ticket '+row.values.ticket_number+'. Review identity before import.');
+    row.id=candidates[0]?.[0]||randomUUID();assignments.push({index:row.index,id:row.id});
+   }
+   uuid(row.id);if(seen.has(row.id))throw new BadRequestException('Duplicate Google record identifier: '+row.id);seen.add(row.id);
+  }
+  if(assignments.length){
+   await sheet.identify(assignments);
+   const verified=await reader.read(c.spreadsheet_id,c.tab_name,fields,snapshots.length===0);
+   for(const a of assignments){const expected=sheet.rows.find(r=>r.id===a.id),actual=verified.rows.find(r=>r.id===a.id);if(actual){if(delivery&&actual.values[dateKey])actual.values[dateKey]=gridDate(actual.values[dateKey],false)||actual.values[dateKey];const team=actual.values[teamKey];const match=technicians.find(t=>t.id===team||t.full_name.trim().toLowerCase()===team?.trim().toLowerCase());if(match)actual.values[teamKey]=match.id;}if(!expected||!actual||!sameValues(expected.values,actual.values))throw new ConflictException('Identity review: sheet changed while assigning record identifiers. No operational data was imported.');}
+  }
+  const columns:SyncColumn[]=[...sheet.columns,...(c.columns as SyncColumn[]).filter(old=>!sheet.columns.some(x=>x.id===old.id)).map(old=>({...old,active:false}))];
+  // Column metadata changes never remove historical operational values.
+  if(JSON.stringify(columns)!==JSON.stringify(c.columns))await db.query('UPDATE sheet_configurations SET columns=$2 WHERE id=$1',[c.id,JSON.stringify(columns)]);
+  let changed=0;
+  for(const row of sheet.rows){
+   if(!seen.has(row.id))continue;
+   const snapshot=byId.get(row.id),local=locals.get(row.id);
+   if(!snapshot&&local&&(local.values.ticket_number?.trim()!==row.values.ticket_number?.trim()||gridDate(local.values[dateKey],false)!==gridDate(row.values[dateKey],false)))throw new ConflictException('Initial record identifier does not match its existing ticket and Date. Review identifiers before importing.');
+   if(snapshot&&sameValues(snapshot.remote_values,row.values))continue;
+   const base=snapshot?.remote_values||row.values,merged=snapshot&&local?mergeCells(base,local.values,row.values).merged:{...local?.values,...row.values};
+   // Record a recoverable proposal before applying a conflicting Google value.
+   if(local&&!sameValues(local.values,merged))await this.propose(c.id,row.id,base,local.values);
+   await db.transaction(async tx=>{
+    const table=delivery?'assurance_tickets':'service_assurance_rows';
+    if(!delivery)await tx.query('SELECT id FROM projects WHERE id=$1 FOR UPDATE',[c.project_id]);
+    await tx.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[row.id]);
+    const [current]=await tx.query(`SELECT id,project_id,version FROM ${table} WHERE id=$1 FOR UPDATE`,[row.id]);
+    if(current&&(current.project_id!==c.project_id||!local))throw new ConflictException('Record identifier belongs to a different project or month; review the sheet identifier');
+    if((current?.version??null)!==(local?.record.version??null))throw new ConflictException('A controller edited this row during synchronization. Retry preserves both changes.');
+    const body={id:row.id,project_id:c.project_id,base_version:current?.version??null,mutation_id:randomUUID(),values:merged};
+    if(!local||!sameValues(local.values,merged)){
+     if(delivery)await new ServiceDelivery(tx).saveOrder(body,actor);else await new ServiceAssurance(tx).save(body,actor);
+     changed++;
+    }
+    await tx.query(`UPDATE sheet_sync_proposals SET status='superseded' WHERE configuration_id=$1 AND record_id=$2 AND status<>'superseded' AND NOT EXISTS (SELECT 1 FROM jsonb_each_text(proposed_values) p WHERE p.value IS DISTINCT FROM base_values->>p.key AND p.value IS DISTINCT FROM $3::jsonb->>p.key)`,[c.id,row.id,JSON.stringify(row.values)]);
+    await tx.query(`INSERT INTO sheet_sync_records(configuration_id,record_id,remote_values,last_local_values) VALUES($1,$2,$3,$4) ON CONFLICT(configuration_id,record_id) DO UPDATE SET remote_values=EXCLUDED.remote_values,last_local_values=EXCLUDED.last_local_values,remote_deleted=false,updated_at=now()`,[c.id,row.id,JSON.stringify(row.values),JSON.stringify(merged)]);
+   });
+  }
+  for(const old of snapshots)if(!seen.has(old.record_id))await db.query('UPDATE sheet_sync_records SET remote_deleted=true,updated_at=now() WHERE configuration_id=$1 AND record_id=$2 AND NOT remote_deleted',[c.id,old.record_id]);
+  await this.proposals(c,locals,byId);
+  // Store the version observed before reads. Metadata writes cause one extra scan, never missed updates.
+  await db.query('UPDATE sheet_configurations SET remote_revision=$2 WHERE id=$1',[c.id,String(revision.version)]);
+  return {status:'synchronized',records:changed,missing_preserved:snapshots.filter(s=>!seen.has(s.record_id)).length};
+ }
+ private async propose(configuration:string,record:string,base:Values,values:Values){
+  await db.query(`INSERT INTO sheet_sync_proposals(configuration_id,record_id,base_values,proposed_values,fingerprint) VALUES($1,$2,$3,$4,$5) ON CONFLICT(configuration_id,record_id,fingerprint) DO NOTHING`,[configuration,record,JSON.stringify(base),JSON.stringify(values),fingerprint({base,values})]);
+ }
+ private async proposals(c:any,locals:Map<string,{record:any;values:Values}>,snapshots:Map<any,any>){
+  for(const [id,local] of locals){const snapshot=snapshots.get(id);if(!snapshot||!sameValues(local.values,snapshot.last_local_values))await this.propose(c.id,id,snapshot?.remote_values||{},local.values);}
+ }
+}

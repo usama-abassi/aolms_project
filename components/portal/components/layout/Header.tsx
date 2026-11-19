@@ -23,7 +23,8 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
-  const isAdmin = usePathname().startsWith('/admin/');
+  const pathname = usePathname();
+  const isAdmin = pathname.startsWith('/admin/');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -38,6 +39,14 @@ export const Header: React.FC<HeaderProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => { setIsUserMenuOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (!isUserMenuOpen) return;
+    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') { setIsUserMenuOpen(false); userMenuRef.current?.querySelector('button')?.focus(); } };
+    document.addEventListener('keydown', close);
+    return () => document.removeEventListener('keydown', close);
+  }, [isUserMenuOpen]);
 
   const handleProfile = () => {
     setIsUserMenuOpen(false);

@@ -17,7 +17,7 @@ export interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ navItems, onLogout, currentUser, children }) => {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => window.innerWidth < 768);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const pathname = usePathname();
   const signedInUser = useCurrentProfile();
   const technician = pathname.startsWith('/technician/');
@@ -32,17 +32,23 @@ export const Layout: React.FC<LayoutProps> = ({ navItems, onLogout, currentUser,
   const getPageTitle = () => {
     if (pathname.includes('/assurance-form/')) return 'Service Delivery Form';
     if (pathname.includes('/delivery-form/')) return 'Delivery Form';
+    const navigationTitle = navItems.find(item => item.path === pathname)?.label;
+    if (navigationTitle) return navigationTitle;
     const path = pathname.split('/').pop();
     const titles: Record<string, string> = {
       dashboard: 'Dashboard',
+      configuration: 'Configuration',
       profiles: 'Users',
       projects: 'Projects',
-      audit: 'Audit',
+      audit: pathname.startsWith('/admin/') ? 'Service Assurance Audit' : 'Audit',
+      inventory: 'Inventory',
+      'operations-data': 'Operations Data',
+      settings: 'Settings',
+      history: 'History',
       'ont-db': 'ONT DB',
       'cpe-db': 'CPE DB',
       todo: 'To-Do',
       submitted: 'Submitted Orders',
-      'operations-data': 'Operations Data',
       'legacy-operations': 'Operations Center',
       me: 'My Profile',
     };

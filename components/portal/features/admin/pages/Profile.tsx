@@ -19,28 +19,24 @@ const Profile: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
     const fetchUser = async () => {
-      if (!supabase) return;
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
+      try {
+        if (!supabase) return;
+        const {data: {user}} = await supabase.auth.getUser();
+        if (!user) return;
+        const {data, error} = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        if (error) { console.error('Error fetching profile:', error); return; }
+        if (mounted) setUser(data);
+      } catch (error) {
         console.error('Error fetching profile:', error);
-        return;
+      } finally {
+        if (mounted) setLoading(false);
       }
-
-      setUser(data);
-      setLoading(false);
     };
 
-    fetchUser();
+    void fetchUser();
+    return () => { mounted = false; };
   }, []);
 
   const roleColors: Record<string, string> = {

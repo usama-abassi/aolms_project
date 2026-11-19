@@ -1,4 +1,5 @@
 'use client';
+import {recordMonth,type SyncColumn} from '@/lib/services/google-sheets/sync-model';
 import {useRef,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {Lock} from 'lucide-react';
@@ -13,7 +14,7 @@ import {useGridFocus} from './useGridFocus';
 import {useDeliveryGrid,type ServerDraft} from './useDeliveryGrid';
 import {protectedGridFields} from '@/lib/services/assurance-tickets/grid-values';
 
-export default function AssuranceSpreadsheet({projectId,userId,serviceAssurance=false}:{projectId:string;userId:string;serviceAssurance?:boolean}){
+export default function AssuranceSpreadsheet({projectId,userId,serviceAssurance=false,month='',columns}:{projectId:string;userId:string;serviceAssurance?:boolean;month?:string;columns?:SyncColumn[]}){
  const base=serviceAssurance?'/service-assurance':'/assurance-tickets';
  const meta=useQuery({queryKey:serviceAssurance?[base,'metadata',userId]:['assurance-metadata',userId],queryFn:()=>api<{fields:Field[];technicians:Array<{id:string;full_name:string}>}>(`${base}/metadata`)});
  const records=useQuery({queryKey:serviceAssurance?[base,userId,projectId]:['assurance-tickets',userId,projectId],queryFn:()=>api<Ticket[]>(`${base}?project_id=${projectId}`)});
@@ -21,10 +22,10 @@ export default function AssuranceSpreadsheet({projectId,userId,serviceAssurance=
  const [refreshKey,setRefreshKey]=useState(0);
  if(meta.isPending||records.isPending||drafts.isPending)return <p>Loading {serviceAssurance?'Service Assurance':'Service Delivery'}...</p>;
  if(meta.error||records.error||drafts.error)return <p role="alert">{meta.error?.message||records.error?.message||drafts.error?.message}</p>;
- return <DeliveryGrid key={`${projectId}:${userId}:${refreshKey}`} projectId={projectId} userId={userId} serviceAssurance={serviceAssurance} fields={meta.data!.fields} technicians={meta.data!.technicians} tickets={records.data!} drafts={drafts.data!} refresh={async()=>{await Promise.all([records.refetch(),drafts.refetch()]);setRefreshKey(v=>v+1);}}/>;
+ return <DeliveryGrid key={`${projectId}:${userId}:${refreshKey}`} projectId={projectId} userId={userId} serviceAssurance={serviceAssurance} month={month} fields={columns?.length?columns.filter(c=>c.active).map(c=>({...meta.data!.fields.find(f=>f.key===c.key),key:c.key,label:c.label,excelColumn:String(c.index+1),storage:c.key,type:meta.data!.fields.find(f=>f.key===c.key)?.type||'text'})):meta.data!.fields} technicians={meta.data!.technicians} tickets={records.data!.filter(t=>!month||recordMonth(String(t.date||''))===month)} drafts={drafts.data!} refresh={async()=>{await Promise.all([records.refetch(),drafts.refetch()]);setRefreshKey(v=>v+1);}}/>;
 }
-function DeliveryGrid({projectId,userId,serviceAssurance,fields,technicians,tickets,drafts,refresh}:{projectId:string;userId:string;serviceAssurance:boolean;fields:Field[];technicians:Array<{id:string;full_name:string}>;tickets:Ticket[];drafts:ServerDraft[];refresh:()=>Promise<void>}){
- const grid=useDeliveryGrid(projectId,userId,fields,tickets,drafts,technicians,serviceAssurance?{manual:true,recordsPath:'/service-assurance',gridPath:'/service-assurance/grid'}:{});
+function DeliveryGrid({projectId,userId,serviceAssurance,month,fields,technicians,tickets,drafts,refresh}:{projectId:string;userId:string;serviceAssurance:boolean;month:string;fields:Field[];technicians:Array<{id:string;full_name:string}>;tickets:Ticket[];drafts:ServerDraft[];refresh:()=>Promise<void>}){
+ const grid=useDeliveryGrid(projectId,userId,fields,tickets,drafts,technicians,serviceAssurance?{manual:true,month,recordsPath:'/service-assurance',gridPath:'/service-assurance/grid'}:{month});
  const title=serviceAssurance?'Service Assurance':'Service Delivery';
  const [page,setPage]=useState(0),[review,setReview]=useState<string|null>(null);
  const table=useRef<HTMLTableElement>(null),tabStart=useRef<number|null>(null);
@@ -57,9 +58,9 @@ function DeliveryGrid({projectId,userId,serviceAssurance,fields,technicians,tick
  }
  const pending=grid.rows.filter(r=>r.pending.length).length;
  return <div className="space-y-3">
- <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-h4 font-semibold">{title}</h2><p className="text-sm text-neutral-500">{grid.recordCount} rows · Dates/times: Bahrain · <span role="status">{pending?`${pending} rows ${serviceAssurance?'awaiting submission':'saving or waiting to retry'}`:'All committed changes saved'}</span></p></div>
- <div className="flex flex-wrap gap-2">{!serviceAssurance&&<ShortcutsGuide userId={userId}/>} {serviceAssurance&&<Button disabled={grid.rows.some(r=>r.state==='saving')} onClick={grid.retry}>Submit rows</Button>}<Button onClick={add}>Add row</Button><Button variant="outline" onClick={()=>{if(pending){if(serviceAssurance)setNotice('Submit your changes before refreshing.');else{grid.retry();setNotice('');}}else void refresh();}}>Refresh</Button><Button variant="ghost" onClick={grid.exportDraft}>Export draft</Button></div></div>
- <p className="text-xs text-neutral-500">{serviceAssurance?'Type to replace a cell; arrows, Enter or Tab commit locally and move. F2 or double-click edits within the text. New rows appear automatically; Submit rows saves changes to the database. Only Resolved rows with a verified replacement resolution need a technician response. Choose Team to assign the response. Assigned-date filters accept YYYY-MM-DD or DD/MM/YYYY with optional HH:mm (Bahrain).':'Type to replace a selected cell; arrows, Enter or Tab commit and save automatically. F2 or double-click edits within the text. New rows appear automatically. Exact typed text is retained. Only valid Resolved rows with a Team become technician Todo tasks.'}</p>
+ <div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-h4 font-semibold">{title}</h2><p className="text-sm text-neutral-500">{grid.recordCount} rows · Dates/times: Bahrain · <span role="status">{pending?`${pending} rows saving or waiting to retry`:'All committed changes saved'}</span></p></div>
+ <div className="flex flex-wrap gap-2">{!serviceAssurance&&<ShortcutsGuide userId={userId}/>} <Button onClick={add}>Add row</Button><Button variant="outline" onClick={()=>{if(pending){grid.retry();setNotice('Pending changes are being saved before refreshing.');}else void refresh();}}>Refresh</Button><Button variant="ghost" onClick={grid.exportDraft}>Export draft</Button></div></div>
+ <p className="text-xs text-neutral-500">{serviceAssurance?'Type to replace a cell; arrows, Enter or Tab commit locally and move. F2 or double-click edits within the text. New rows appear automatically; Changes save automatically after approximately two seconds of inactivity. Only Resolved rows with a verified replacement resolution need a technician response. Choose Team to assign the response. Assigned-date filters accept YYYY-MM-DD or DD/MM/YYYY with optional HH:mm (Bahrain).':'Type to replace a selected cell; arrows, Enter or Tab commit and save automatically. F2 or double-click edits within the text. New rows appear automatically. Exact typed text is retained. Only valid Resolved rows with a Team become technician Todo tasks.'}</p>
  {!technicians.length&&<p className="text-sm text-warning-700">No active Technicians are configured. An Admin must add one before a task can be assigned.</p>}
  {grid.error&&<p role="alert" className="text-danger-600">{grid.error}</p>}{notice&&<p role="status">{notice}</p>}
  {grid.hasRecovery&&<div className="text-sm">Uncommitted text from a previous visit is available. <Button variant="outline" onClick={grid.recover}>Restore uncommitted text</Button></div>}
