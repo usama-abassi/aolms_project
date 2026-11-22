@@ -48,9 +48,18 @@ describe('incremental synchronization',()=>{
   expect(identify).not.toHaveBeenCalled();
   expect(state.save.mock.calls[0][0]).toMatchObject({values:{ticket_number:'T1'}});
  });
+ it('uses the last row for a repeated ticket and reuses the existing AOLMS record',async()=>{
+  const later={id:'',index:3,values:{...values,work_date:'2026-10-20',actioned:'Delivered'}};
+  const identify=vi.fn();
+  state.read.mockResolvedValueOnce({columns,rows:[{id,index:1,values:{...values,work_date:'bad date'}},later],identify})
+   .mockResolvedValueOnce({columns,rows:[{id,index:1,values},{...later,id}],identify});
+  await expect(run()).resolves.toMatchObject({records:1,duplicates_skipped:1});
+  expect(identify).toHaveBeenCalledWith([{index:3,id}]);
+  expect(state.save.mock.calls[0][0]).toMatchObject({id,values:{work_date:'2026-10-20',actioned:'Delivered'}});
+ });
  it('matches the same record after sorting or inserting Sheet rows',async()=>{state.read.mockResolvedValue({columns,rows:[{id,index:99,values:{...values,actioned:'Delivered'}}],identify:vi.fn()});await run();expect(state.save.mock.calls[0][0]).toMatchObject({id,base_version:1});});
  it('retains records missing from Sheets and marks only their mapping',async()=>{state.read.mockResolvedValue({columns,rows:[],identify:vi.fn()});await expect(run()).resolves.toMatchObject({missing_preserved:1});expect(state.save).not.toHaveBeenCalled();expect(state.query.mock.calls.some(c=>c[0].startsWith('DELETE'))).toBe(false);expect(state.query.mock.calls.some(c=>c[0].includes('remote_deleted=true'))).toBe(true);});
- it('rejects duplicate stable row IDs before importing',async()=>{state.read.mockResolvedValue({columns,rows:[{id,index:1,values},{id,index:2,values}],identify:vi.fn()});await expect(run()).rejects.toThrow('Duplicate');expect(state.save).not.toHaveBeenCalled();});
+ it('rejects duplicate stable row IDs before importing',async()=>{state.read.mockResolvedValue({columns,rows:[{id,index:1,values},{id,index:2,values:{...values,ticket_number:"T2"}}],identify:vi.fn()});await expect(run()).rejects.toThrow('Duplicate');expect(state.save).not.toHaveBeenCalled();});
  it('does not overwrite a simultaneous controller save',async()=>{currentVersion=2;await expect(run()).rejects.toThrow('edited this row');expect(state.save).not.toHaveBeenCalled();});
  it('does not import unchanged remote records again',async()=>{state.read.mockResolvedValue({columns,rows:[{id,index:1,values}],identify:vi.fn()});await expect(run()).resolves.toMatchObject({records:0});expect(state.save).not.toHaveBeenCalled();});
 });

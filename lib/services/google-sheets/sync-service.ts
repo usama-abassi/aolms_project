@@ -67,13 +67,33 @@ export class SheetSyncService{
    const matches=technicians.filter(t=>t.full_name.trim().toLowerCase()===team.toLowerCase());
    if(byId||matches.length===1)values[teamKey]=(byId??matches[0]).id;
   };
-  const rows=sheet.rows.filter(row=>!!row.values[identifier?.key??'ticket_number']?.trim());
+  const latest=new Map<string,(typeof sheet.rows)[number]>();
+  let duplicates=0;
+  for(const row of sheet.rows){
+   const ticket=row.values[identifier?.key??'ticket_number']?.trim();
+   if(!ticket)continue;
+   const prior=latest.get(ticket);
+   if(prior)duplicates++;
+   if(!prior||row.index>prior.index)latest.set(ticket,row);
+  }
+  const rows=[...latest.values()].sort((a,b)=>a.index-b.index);
   for(const row of rows)normalize(row.values);
+  const existingByTicket=new Map([...locals].map(([id,l])=>[l.values.ticket_number?.trim(),id]));
+  const outsideMonth=delivery&&latest.size?new Set((await db.query(`SELECT id,ticket_number FROM assurance_tickets WHERE ticket_number=ANY($1::text[])`,[[...latest.keys()]])).filter(t=>!locals.has(t.id)).map(t=>t.ticket_number)):new Set<string>();
+  let outsideMonthSkipped=0;
   const assignments:Array<{index:number;id:string}>=[],seen=new Set<string>();
+  const skipped=new Set<number>();
   for(const row of rows){
+   const ticket=row.values.ticket_number.trim();
+   if(outsideMonth.has(ticket)){outsideMonthSkipped++;skipped.add(row.index);continue;}
    const month=recordMonth(row.values[dateKey]||locals.get(row.id)?.values[dateKey]||'');
    if(!month)throw new BadRequestException(`Row ${row.index+1} has no valid controller Date. Use YYYY-MM-DD, DD/MM/YYYY, or D-MMM (for example, 1-Sep).`);
-   if(month!==c.month_key){if(byId.has(row.id))throw new ConflictException('A synchronized row moved to another month. Review its Date and configuration before retrying.');continue;}
+   if(month!==c.month_key){if(byId.has(row.id))throw new ConflictException('A synchronized row moved to another month. Review its Date and configuration before retrying.');skipped.add(row.index);continue;}
+   const existingId=delivery?existingByTicket.get(ticket):undefined;
+   if(existingId&&row.id!==existingId&&!locals.has(row.id)&&!byId.has(row.id)){
+    row.id=existingId;assignments.push({index:row.index,id:row.id});
+   }
+   if(existingId&&row.id!==existingId)throw new ConflictException(`Sheet row ${row.index+1} has an identifier linked to a different ticket. Review ticket ${ticket} before retrying.`);
    if(!row.id){
     const candidates=[...locals].filter(([,l])=>!!row.values.ticket_number?.trim()&&l.values.ticket_number?.trim()===row.values.ticket_number.trim()&&gridDate(l.values[dateKey],false)===gridDate(row.values[dateKey],false));
     if(candidates.length>1)throw new BadRequestException('Multiple existing records match ticket '+row.values.ticket_number+'. Review identity before import.');
@@ -84,16 +104,16 @@ export class SheetSyncService{
   if(assignments.length){
    await sheet.identify(assignments);
    const verified=await reader.read(c.spreadsheet_id,c.tab_name,fields,snapshots.length===0);
-   for(const a of assignments){const expected=rows.find(r=>r.id===a.id),actual=verified.rows.find(r=>r.id===a.id);if(actual)normalize(actual.values);if(!expected||!actual||!sameValues(expected.values,actual.values))throw new ConflictException('Identity review: sheet changed while assigning record identifiers. No operational data was imported.');}
+   for(const a of assignments){const expected=rows.find(r=>r.id===a.id),actual=verified.rows.find(r=>r.id===a.id&&r.index===a.index);if(actual)normalize(actual.values);if(!expected||!actual||!sameValues(expected.values,actual.values))throw new ConflictException('Identity review: sheet changed while assigning record identifiers. No operational data was imported.');}
   }
   const columns:SyncColumn[]=[...sheet.columns,...(c.columns as SyncColumn[]).filter(old=>!sheet.columns.some(x=>x.id===old.id)).map(old=>({...old,active:false}))];
   // Column metadata changes never remove historical operational values.
   if(JSON.stringify(columns)!==JSON.stringify(c.columns))await db.query('UPDATE sheet_configurations SET columns=$2 WHERE id=$1',[c.id,JSON.stringify(columns)]);
   let changed=0;
   for(const row of rows){
-   if(!seen.has(row.id))continue;
+   if(skipped.has(row.index)||!seen.has(row.id))continue;
    const snapshot=byId.get(row.id),local=locals.get(row.id);
-   if(!snapshot&&local&&(local.values.ticket_number?.trim()!==row.values.ticket_number?.trim()||gridDate(local.values[dateKey],false)!==gridDate(row.values[dateKey],false)))throw new ConflictException('Initial record identifier does not match its existing ticket and Date. Review identifiers before importing.');
+   if(!snapshot&&local&&(local.values.ticket_number?.trim()!==row.values.ticket_number?.trim()||!delivery&&gridDate(local.values[dateKey],false)!==gridDate(row.values[dateKey],false)))throw new ConflictException('Initial record identifier does not match its existing ticket and Date. Review identifiers before importing.');
    if(snapshot&&sameValues(snapshot.remote_values,row.values))continue;
    const base=snapshot?.remote_values||row.values,merged=snapshot&&local?mergeCells(base,local.values,row.values).merged:{...local?.values,...row.values};
    // Record a recoverable proposal before applying a conflicting Google value.
@@ -118,7 +138,7 @@ export class SheetSyncService{
   await this.proposals(c,locals,byId);
   // Store the version observed before reads. Metadata writes cause one extra scan, never missed updates.
   await db.query('UPDATE sheet_configurations SET remote_revision=$2 WHERE id=$1',[c.id,String(revision.version)]);
-  return {status:'synchronized',records:changed,missing_preserved:snapshots.filter(s=>!seen.has(s.record_id)).length};
+  return {status:'synchronized',records:changed,duplicates_skipped:duplicates,existing_outside_month_skipped:outsideMonthSkipped,missing_preserved:snapshots.filter(s=>!seen.has(s.record_id)).length};
  }
  private async propose(configuration:string,record:string,base:Values,values:Values){
   await db.query(`INSERT INTO sheet_sync_proposals(configuration_id,record_id,base_values,proposed_values,fingerprint) VALUES($1,$2,$3,$4,$5) ON CONFLICT(configuration_id,record_id,fingerprint) DO NOTHING`,[configuration,record,JSON.stringify(base),JSON.stringify(values),fingerprint({base,values})]);
