@@ -50,5 +50,14 @@ describe('Service Delivery backend authorization and concurrency',()=>{
   expect(JSON.parse(args[7]).delivery.appointment).toBe('To be confirmed');
   await expect(service.saveOrder(body,manager)).rejects.toThrow('Invalid Appointment');
  });
+ it('imports rows with a blank Actioned value as open without relaxing manual entry',async()=>{
+  const {service,query}=setup(null);
+  const body={id,project_id:id,mutation_id:mutation,base_version:null,values:{work_date:'2026-10-14',ticket_number:'123'}};
+  await service.saveOrder(body,manager,{sheetImport:true});
+  const args=query.mock.calls.find(([sql])=>sql.startsWith('INSERT INTO assurance_tickets'))![1]!;
+  expect(args[6]).toBe('Open');
+  expect(JSON.parse(args[7]).delivery.actioned).toBe('');
+  await expect(service.saveOrder(body,manager)).rejects.toThrow('Actioned is required');
+ });
  it('validates the Team against the database',async()=>{const {service,query}=setup();query.mockImplementation(async(sql:string)=>sql.includes('SELECT id FROM projects')?[{id}]:[]);const rowValues=Object.fromEntries(controllerFields.map(f=>[f.key,'']));Object.assign(rowValues,{work_date:'2026-10-14',ticket_number:'123',actioned:'Delivered',technician_id:tech});await expect(service.saveOrder({id,project_id:id,mutation_id:mutation,base_version:null,values:rowValues},manager)).rejects.toThrow('active Technician');});
 });

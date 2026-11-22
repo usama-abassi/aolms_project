@@ -14,7 +14,7 @@ export class ServiceDelivery {
   managerOnly(actor);const id=uuid(body.id),project=uuid(body.project_id),mutation=uuid(body.mutation_id);
   const keys=(await dynamicKeys(this.db,project,body.values?.work_date)).filter(key=>Object.hasOwn(body.values||{},key));
   const values=this.validate(body.values,[...controllerFields,...keys.map(key=>({key,label:key,type:'text'}))]);
-  if(!values.work_date||!values.ticket_number||!values.actioned)throw new BadRequestException('Date, Order and Actioned are required');
+  if(!values.work_date||!values.ticket_number)throw new BadRequestException('Date and Order are required');
   return this.db.transaction(async tx=>{
    await tx.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[id]);
    const [p]=await tx.query("SELECT id FROM projects WHERE id=$1 AND code='SERVICE_ASSURANCE'",[project]);if(!p)throw new BadRequestException('Select Service Delivery');
@@ -28,6 +28,8 @@ export class ServiceDelivery {
     // Optional sheet dates live in JSON; preserve unfamiliar formats and notes as entered.
     else if(f.key==='work_date'||(!sheetImport&&old?.spreadsheet_fields?.delivery?.[f.key]!==values[f.key]))throw new BadRequestException(`Invalid ${f.label}`);
    }
+   if(!values.actioned.trim()&&!sheetImport&&(!old||old.spreadsheet_fields?.delivery?.actioned!==''))
+    throw new BadRequestException('Actioned is required');
    let technicianId:string|null=null;
    if(values.technician_id){
     const team=values.technician_id;
