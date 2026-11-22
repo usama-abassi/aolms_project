@@ -1,4 +1,4 @@
-// Apply the repeatable display-name migration to the configured database.
+// Apply the repeatable display-name migration to the configured database
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client } = require('pg');
