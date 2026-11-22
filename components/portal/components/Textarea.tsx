@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { cn } from '../lib/utils';
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -16,7 +16,8 @@ export const Textarea: React.FC<TextareaProps> = ({
   id,
   ...props
 }) => {
-  const textareaId = id || label?.toLowerCase().replace(/\s+/g, '-');
+  const generatedId = useId();
+  const textareaId = id ?? generatedId;
 
   return (
     <div className="min-w-0 space-y-1.5">

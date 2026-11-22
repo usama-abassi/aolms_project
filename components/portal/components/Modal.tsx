@@ -1,8 +1,13 @@
 'use client';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '../lib/utils';
 import { X } from 'lucide-react';
+
+function getFocusable(container:HTMLElement){
+  return Array.from(container.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, summary, [tabindex]'))
+    .filter(el=>el.tabIndex>=0&&!el.matches(':disabled')&&el.getClientRects().length>0&&getComputedStyle(el).visibility!=='hidden');
+}
 
 export interface ModalProps {
   isOpen: boolean;
@@ -27,6 +32,7 @@ export const Modal: React.FC<ModalProps> = ({
   closeOnOverlayClick = true,
   closeOnEscape = true,
 }) => {
+  const titleId = useId();
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
@@ -45,9 +51,7 @@ export const Modal: React.FC<ModalProps> = ({
       }
       // Trap focus
       if (e.key === 'Tab' && modalRef.current) {
-        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
-          'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
-        );
+        const focusableElements = getFocusable(modalRef.current);
         const firstElement = focusableElements[0];
         const lastElement = focusableElements[focusableElements.length - 1];
 
@@ -66,10 +70,7 @@ export const Modal: React.FC<ModalProps> = ({
 
     // Focus first focusable element
     const focusTimer = setTimeout(() => {
-      const firstFocusable = modalRef.current?.querySelector<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      firstFocusable?.focus();
+      if (modalRef.current) (getFocusable(modalRef.current)[0] ?? modalRef.current).focus();
     }, 0);
 
     // Prevent body scroll
@@ -95,7 +96,7 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] overflow-y-auto animate-fade-in" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div className="fixed inset-0 z-[100] overflow-y-auto animate-fade-in" role="dialog" aria-modal="true" aria-labelledby={titleId}>
       {/* Background overlay */}
       <div
         className="fixed inset-0 bg-neutral-900/50 dark:bg-neutral-950/70 animate-fade-in"
@@ -107,6 +108,7 @@ export const Modal: React.FC<ModalProps> = ({
       <div className="relative z-10 flex min-h-full items-center justify-center p-2 sm:p-4 pointer-events-none">
         <div
           ref={modalRef}
+          tabIndex={-1}
           className={cn(
             'pointer-events-auto flex max-h-[calc(100vh-2rem)] w-full flex-col bg-white text-neutral-900 dark:bg-neutral-900 dark:text-neutral-50 rounded-xl shadow-2xl',
             sizeClasses[size],
@@ -115,10 +117,11 @@ export const Modal: React.FC<ModalProps> = ({
         >
           {/* Header */}
           <div className="flex shrink-0 items-center justify-between gap-2 px-4 py-3 sm:px-6 border-b border-neutral-200 dark:border-neutral-700">
-            <h3 id="modal-title" className="text-h5 text-neutral-900 dark:text-neutral-50">
+            <h3 id={titleId} className="text-h5 text-neutral-900 dark:text-neutral-50">
               {title}
             </h3>
             <button
+              type="button"
               onClick={onClose}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-neutral-500 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
               aria-label="Close modal"

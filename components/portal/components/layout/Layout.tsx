@@ -21,9 +21,10 @@ export const Layout: React.FC<LayoutProps> = ({ navItems, onLogout, currentUser,
   const pathname = usePathname();
   const signedInUser = useCurrentProfile();
   const technician = pathname.startsWith('/technician/');
-  const [offline, setOffline] = useState(!navigator.onLine);
+  const [offline, setOffline] = useState(false);
   useEffect(() => {
     const update = () => setOffline(!navigator.onLine);
+    update();
     window.addEventListener('online', update); window.addEventListener('offline', update);
     return () => { window.removeEventListener('online', update); window.removeEventListener('offline', update); };
   }, []);

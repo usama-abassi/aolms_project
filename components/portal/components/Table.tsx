@@ -60,9 +60,12 @@ export function Table<T extends Record<string, any> = any>({
         setIsScrolling(tableRef.current.scrollLeft > 0);
       }
     };
-    tableRef.current?.addEventListener('scroll', handleScroll);
-    return () => tableRef.current?.removeEventListener('scroll', handleScroll);
-  }, []);
+    const container = tableRef.current;
+    if (!container) return;
+    setIsScrolling(container.scrollLeft > 0);
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [isLoading, data.length === 0]);
 
   const getRowId = (row: T): string => {
     if (typeof rowKey === 'function') return rowKey(row);
@@ -147,19 +150,20 @@ export function Table<T extends Record<string, any> = any>({
                 scope="col"
                 className={cn(
                   'px-4 py-3 text-left text-table-header text-neutral-500 dark:text-neutral-400',
-                  'cursor-pointer select-none transition-colors',
-                  'hover:bg-neutral-100 dark:hover:bg-neutral-800',
+                  'transition-colors',
                   column.align === 'center' && 'text-center',
                   column.align === 'right' && 'text-right',
                   column.className
                 )}
                 style={{ width: column.width, minWidth: column.minWidth }}
-                onClick={() => column.sortable && onSort && onSort(column.key, sortConfig?.key === column.key && sortConfig.direction === 'asc' ? 'desc' : 'asc')}
+                aria-sort={column.sortable && sortConfig?.key === column.key ? (sortConfig.direction === 'asc' ? 'ascending' : 'descending') : undefined}
               >
-                <div className="flex items-center justify-center gap-1">
-                  {column.label}
-                  {column.sortable && getSortIcon(column.key)}
-                </div>
+                {column.sortable && onSort ? (
+                  <button type="button" className="inline-flex items-center gap-1 rounded text-inherit hover:text-primary-700 focus-visible:ring-2 focus-visible:ring-primary-500 dark:hover:text-primary-300"
+                    onClick={() => onSort(column.key, sortConfig?.key === column.key && sortConfig.direction === 'asc' ? 'desc' : 'asc')}>
+                    {column.label}{getSortIcon(column.key)}
+                  </button>
+                ) : column.label}
               </th>
             ))}
           </tr>

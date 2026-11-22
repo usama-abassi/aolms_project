@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { cn } from '../lib/utils';
 
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
@@ -20,7 +20,8 @@ export const Select: React.FC<SelectProps> = ({
   id,
   ...props
 }) => {
-  const selectId = id || label?.toLowerCase().replace(/\s+/g, '-');
+  const generatedId = useId();
+  const selectId = id ?? generatedId;
 
   return (
     <div className="min-w-0 space-y-1.5">

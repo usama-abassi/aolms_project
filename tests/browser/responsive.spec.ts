@@ -334,3 +334,25 @@ for(const mod of ['Control','Meta'])test(`Phase 1 typing autosave and all shortc
  await page.reload();await expect(cell('Ticket No')).toHaveValue('000999');await expect(cell('Date')).toHaveValue('02/10/2026');await expect(cell('Description')).toHaveValue('  first\nsecond  ');
  await expect(cell('Mobile')).toHaveValue('0077');
 });
+
+test('Delivery grid shows one save status and contains wide cells on mobile',async({page})=>{
+ await fixtures(page,'controller','light');
+ await page.setViewportSize({width:375,height:850});
+ await page.route('**/api/service-delivery/workflow?*',route=>{
+  const params=new URL(route.request().url()).searchParams;
+  return route.fulfill({json:params.has('mode')?{technicians:[]}:[{
+   id:ticketId,version:1,work_date:'2026-09-26',ticket_number:'DEL-1001',
+   spreadsheet_fields:{delivery:{work_date:'2026-09-26',ticket_number:'DEL-1001',technician_id:'Unmatched team',actioned:'Delivered'}}
+  }]});
+ });
+ await page.goto('/controller/projects');
+ const section=page.getByRole('region',{name:'Service Delivery',exact:true});
+ await expect(section.getByRole('status')).toHaveText('All changes saved');
+ await expect(section.getByText('0 unsaved')).toHaveCount(0);
+ await expect(section.getByRole('columnheader',{name:'Save status'})).toHaveCount(0);
+ await expect(section.getByRole('button',{name:'Technicians not found: 1'})).toBeVisible();
+ await expect(section.getByText('Type to replace a cell.',{exact:false})).toBeHidden();
+ await section.getByText('Editing tips',{exact:true}).click();
+ await expect(section.getByText('Type to replace a cell.',{exact:false})).toBeVisible();
+ await noOverflow(page);
+});
