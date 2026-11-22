@@ -4,9 +4,12 @@ import {BadRequestException,ConflictException} from '@/lib/http';
 import {GoogleSheetsClient} from './google-client';
 import {type SyncColumn} from './sync-model';
 export type SheetSnapshot={sheetId:number;idColumn:number;columns:SyncColumn[];rows:Array<{index:number;id:string;values:Record<string,string>}>;identify:(assignments:Array<{index:number;id:string}>)=>Promise<void>};
+function columnIndex(letter: string) {
+ return [...letter].reduce((index, character) => index * 26 + character.charCodeAt(0) - 64, 0) - 1;
+}
 export class SheetReader{
  constructor(private google=new GoogleSheetsClient()){}
- async read(id:string,tabName:string,known:Array<{key:string;label:string}>,allowInitialize=true,depth=0):Promise<SheetSnapshot>{
+ async read(id:string,tabName:string,known:Array<{key:string;label:string;column?:string;excelColumn?:string}>,allowInitialize=true,depth=0):Promise<SheetSnapshot>{
   if(depth>3)throw new ConflictException('Identity review: repeated column changes during identifier setup. Retry after reviewing the tab.');
   const base=`sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(id)}`;
   const revisionPath=`www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?fields=version&supportsAllDrives=true`;
@@ -44,9 +47,13 @@ export class SheetReader{
    let mapping:any;
    if(matches.length){try{mapping=JSON.parse(matches[0].metadataValue);}catch{throw new BadRequestException('Invalid column synchronization identifier');}}
    else{
-    const matched=known.filter(f=>normal(f.label)===normal(headers[i])||normal(f.key)===normal(headers[i]));
-    if(matched.length>1)throw new BadRequestException('Ambiguous column header: '+headers[i]);
-    const columnId=randomUUID();mapping={id:columnId,key:matched[0]?.key||'sheet_'+columnId.replace(/-/g,'')};
+    const header=normal(headers[i]);
+    const exactKey=known.find(field=>normal(field.key)===header);
+    const matchesByLabel=known.filter(field=>normal(field.label)===header);
+    const positionMatches=matchesByLabel.filter(field=>columnIndex(field.column||field.excelColumn||'')===i);
+    const field=exactKey||(matchesByLabel.length===1?matchesByLabel[0]:positionMatches.length===1?positionMatches[0]:undefined);
+    if(!field&&matchesByLabel.length>1)throw new BadRequestException(`Ambiguous column header: ${headers[i]}. Use its template column or rename the header to one of: ${matchesByLabel.map(candidate=>candidate.key).join(', ')}.`);
+    const columnId=randomUUID();mapping={id:columnId,key:field?.key||'sheet_'+columnId.replace(/-/g,'')};
     requests.push({createDeveloperMetadata:{developerMetadata:{metadataKey:'aolms_column',metadataValue:JSON.stringify(mapping),visibility:'DOCUMENT',location:{dimensionRange:{sheetId:tab.sheetId,dimension:'COLUMNS',startIndex:i,endIndex:i+1}}}}});
    }
    if(typeof mapping.id!=='string'||typeof mapping.key!=='string'||columns.some(c=>c.id===mapping.id||c.key===mapping.key))throw new BadRequestException('Duplicate or invalid column identity. Review the sheet before synchronizing.');
