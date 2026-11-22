@@ -9,7 +9,7 @@ function columnIndex(letter: string) {
 }
 export class SheetReader{
  constructor(private google=new GoogleSheetsClient()){}
- async read(id:string,tabName:string,known:Array<{key:string;label:string;column?:string;excelColumn?:string}>,allowInitialize=true,depth=0):Promise<SheetSnapshot>{
+ async read(id:string,tabName:string,known:Array<{key:string;label:string;column?:string;excelColumn?:string}>,allowInitialize=true,depth=0,revisionRetries=2):Promise<SheetSnapshot>{
   if(depth>3)throw new ConflictException('Identity review: repeated column changes during identifier setup. Retry after reviewing the tab.');
   const base=`sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(id)}`;
   const revisionPath=`www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?fields=version&supportsAllDrives=true`;
@@ -36,24 +36,42 @@ export class SheetReader{
   const result=await this.google.request(base+'/values/'+encodeURIComponent(quoted)+'?valueRenderOption=FORMATTED_VALUE');
   const values:string[][]=(result.values||[]).map((r:any[])=>r.map(v=>String(v??'')));
   const finished=await this.google.request(revisionPath);
-  if(String(started.version)!==String(finished.version))throw new ConflictException('Sheet changed while reading its columns and records. Retry with a consistent snapshot.');
+  if(String(started.version)!==String(finished.version)){
+   if(revisionRetries===0)throw new ConflictException('Google Sheets kept changing during three read attempts. Pause edits to the spreadsheet briefly and try Sync now again.');
+   await new Promise(resolve=>setTimeout(resolve,500*(3-revisionRetries)));
+   return this.read(id,tabName,known,allowInitialize,depth,revisionRetries-1);
+  }
   const headers=values[0]||[];
   const columns:SyncColumn[]=[],requests:any[]=[];
   const normal=(v:string)=>v.trim().toLowerCase();
+  const columnMetadata=metadata().filter((m:any)=>m.metadataKey==='aolms_column'&&m.location?.dimensionRange?.sheetId===tab.sheetId);
+  const reservedKeys=new Set<string>();
+  const mappingsByMetadata=new Map<object,{id:string;key:string}>();
+  for(const entry of columnMetadata){
+   let mapping;
+   try{mapping=JSON.parse(entry.metadataValue);}catch{throw new BadRequestException('Invalid column synchronization identifier');}
+   if(typeof mapping?.id!=='string'||typeof mapping?.key!=='string')throw new BadRequestException('Invalid column synchronization identifier');
+   reservedKeys.add(mapping.key);
+   mappingsByMetadata.set(entry,mapping);
+  }
   for(let i=0;i<headers.length;i++){
    if(i===idColumn||!headers[i].trim())continue;
-   const matches=metadata().filter((m:any)=>m.metadataKey==='aolms_column'&&m.location?.dimensionRange?.sheetId===tab.sheetId&&m.location.dimensionRange.startIndex===i);
+   const matches=columnMetadata.filter((m:any)=>m.location.dimensionRange.startIndex===i);
    if(matches.length>1)throw new BadRequestException('Duplicate column synchronization identifiers require review');
    let mapping:any;
-   if(matches.length){try{mapping=JSON.parse(matches[0].metadataValue);}catch{throw new BadRequestException('Invalid column synchronization identifier');}}
+   if(matches.length)mapping=mappingsByMetadata.get(matches[0]);
    else{
     const header=normal(headers[i]);
     const exactKey=known.find(field=>normal(field.key)===header);
     const matchesByLabel=known.filter(field=>normal(field.label)===header);
     const positionMatches=matchesByLabel.filter(field=>columnIndex(field.column||field.excelColumn||'')===i);
-    const field=exactKey||(matchesByLabel.length===1?matchesByLabel[0]:positionMatches.length===1?positionMatches[0]:undefined);
-    if(!field&&matchesByLabel.length>1)throw new BadRequestException(`Ambiguous column header: ${headers[i]}. Use its template column or rename the header to one of: ${matchesByLabel.map(candidate=>candidate.key).join(', ')}.`);
-    const columnId=randomUUID();mapping={id:columnId,key:field?.key||'sheet_'+columnId.replace(/-/g,'')};
+    const byLabel=matchesByLabel.length===1?matchesByLabel[0]:positionMatches[0];
+    const explicitKeyExists=byLabel&&headers.some(value=>normal(value)===normal(byLabel.key));
+    const field=exactKey||(explicitKeyExists?undefined:byLabel);
+    const columnId=randomUUID();
+    const key=field&&!reservedKeys.has(field.key)?field.key:'sheet_'+columnId.replace(/-/g,'');
+    reservedKeys.add(key);
+    mapping={id:columnId,key};
     requests.push({createDeveloperMetadata:{developerMetadata:{metadataKey:'aolms_column',metadataValue:JSON.stringify(mapping),visibility:'DOCUMENT',location:{dimensionRange:{sheetId:tab.sheetId,dimension:'COLUMNS',startIndex:i,endIndex:i+1}}}}});
    }
    if(typeof mapping.id!=='string'||typeof mapping.key!=='string'||columns.some(c=>c.id===mapping.id||c.key===mapping.key))throw new BadRequestException('Duplicate or invalid column identity. Review the sheet before synchronizing.');
