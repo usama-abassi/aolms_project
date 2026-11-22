@@ -26,6 +26,21 @@ beforeEach(()=>{
 const run=()=> (new SheetSyncService() as any).process(config,{userId:id,role:'controller'});
 describe('incremental synchronization',()=>{
  it('skips unchanged historical spreadsheets without reading cells',async()=>{state.revision.mockResolvedValue({version:'1'});await expect(run()).resolves.toMatchObject({status:'unchanged',records:0});expect(state.read).not.toHaveBeenCalled();expect(state.save).not.toHaveBeenCalled();});
+ it('skips the full local scan when both checkpoints match',async()=>{
+  state.revision.mockResolvedValue({version:'1'});
+  state.query.mockResolvedValueOnce([{checkpoint:'same',previous:'same'}]);
+  await expect(run()).resolves.toMatchObject({fast_path:true,records:0});
+  expect(state.query).toHaveBeenCalledOnce();
+  expect(state.read).not.toHaveBeenCalled();
+ });
+ it('queues local edits when Google is unchanged but the local checkpoint differs',async()=>{
+  state.revision.mockResolvedValue({version:'1'});
+  snapshots=[{record_id:id,remote_values:{...values,actioned:'Delivered'},last_local_values:{...orderValues(record),actioned:'Delivered'}}];
+  state.query.mockResolvedValueOnce([{checkpoint:'changed',previous:'old'}]);
+  await expect(run()).resolves.toMatchObject({local_checkpoint:'changed'});
+  expect(state.query.mock.calls.some(([sql])=>sql.startsWith('INSERT INTO sheet_sync_proposals'))).toBe(true);
+  expect(state.read).not.toHaveBeenCalled();
+ });
  it('updates only changed records through the existing workflow service',async()=>{await expect(run()).resolves.toMatchObject({records:1});expect(state.save).toHaveBeenCalledOnce();expect(state.save.mock.calls[0][0]).toMatchObject({id,project_id:project,base_version:1,values:{actioned:'Delivered'}});});
  it('imports unmatched Team text and continues saving other records',async()=>{
   const other='d1234567-1234-4123-8123-123456789012';
@@ -34,6 +49,18 @@ describe('incremental synchronization',()=>{
   state.query.mockImplementation((sql:string,args?:any[])=>sql.includes('SELECT id,project_id,version')&&args?.[0]===other?Promise.resolve([]):query(sql));
   await expect(run()).resolves.toMatchObject({records:2});
   expect(state.save.mock.calls[0]).toMatchObject([{id,values:{technician_id:'Habib'}},{role:'controller'},{sheetImport:true}]);
+ });
+ it('persists snapshots in bounded batches for a large import',async()=>{
+  const rows=Array.from({length:81},(_,i)=>({
+   id:`a1234567-1234-4123-8123-${String(i).padStart(12,'0')}`,
+   index:i+1,values:{...values,ticket_number:`T${i+2}`}
+  }));
+  snapshots=[];
+  state.read.mockResolvedValue({columns,rows,identify:vi.fn()});
+  state.query.mockImplementation(async()=>[]);
+  await expect(run()).resolves.toMatchObject({records:81});
+  const writes=state.query.mock.calls.filter(([sql])=>sql.startsWith('INSERT INTO sheet_sync_records'));
+  expect(writes.map(([,args])=>JSON.parse(args[1]).length)).toEqual([40,40,1]);
  });
  it('imports a shortened controller Date as a full date from the configured year',async()=>{
   state.read.mockResolvedValue({columns,rows:[{id,index:1,values:{...values,work_date:'1-Oct'}}],identify:vi.fn()});

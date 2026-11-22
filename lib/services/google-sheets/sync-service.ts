@@ -19,7 +19,8 @@ export class SheetSyncService{
   uuid(id);
   // A session advisory lock serializes a whole run, including Google calls and local commits.
   return db.transaction(async lock=>{
-   await lock.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',['configuration:'+id]);
+   const [configurationLock]=await lock.query('SELECT pg_try_advisory_xact_lock(hashtextextended($1,0)) locked',['configuration:'+id]);
+   if(!configurationLock.locked)return {status:'already_running'};
    const [c]=await lock.query(`SELECT c.*,p.code,to_char(c.month,'YYYY-MM') month_key FROM sheet_configurations c JOIN projects p ON p.id=c.project_id WHERE c.id=$1 AND c.deleted_at IS NULL`,[id]);
    if(!c)throw new BadRequestException('Configuration not found');
    const [guard]=await lock.query('SELECT pg_try_advisory_xact_lock(hashtextextended($1,0)) locked',['sheet-sync:'+c.spreadsheet_id]);
@@ -28,9 +29,11 @@ export class SheetSyncService{
    const [log]=await db.query('INSERT INTO sheet_sync_logs(configuration_id) VALUES($1) RETURNING id',[id]);
    await db.query("UPDATE sheet_configurations SET last_attempt_at=now(),sync_status='running',latest_error=NULL WHERE id=$1",[id]);
    try{
+    const started=performance.now();
     const result=await this.process(c,actor);
+    const inboundMs=Math.round(performance.now()-started);
     const updated=await applyOutboundChanges(c);
-    Object.assign(result,{outbound_cells_updated:updated});
+    Object.assign(result,{outbound_cells_updated:updated,inbound_ms:inboundMs,outbound_ms:Math.round(performance.now()-started-inboundMs)});
     await db.query("UPDATE sheet_configurations SET last_success_at=now(),last_checked_at=now(),sync_status='success',latest_error=NULL WHERE id=$1",[id]);
     await db.query("UPDATE sheet_sync_logs SET finished_at=now(),status='success',details=$2 WHERE id=$1",[log.id,JSON.stringify(result)]);
     return result;
@@ -46,13 +49,26 @@ export class SheetSyncService{
   const delivery=c.code==='SERVICE_ASSURANCE',assurance=c.code==='SERVICE_DELIVERY';
   if(!delivery&&!assurance)throw new BadRequestException('This project has no existing controller workflow adapter');
   const fields=delivery?controllerFields:serviceAssuranceFields,dateKey=delivery?'work_date':'date';
-  const all=delivery?await db.query(`SELECT t.*,p.full_name technician_name,c.full_name controller_name FROM assurance_tickets t LEFT JOIN profiles p ON p.id=t.technician_id LEFT JOIN profiles c ON c.id=t.controller_id WHERE t.project_id=$1 AND t.work_date >= $2::date AND t.work_date < ($2::date+interval '1 month') ORDER BY t.id`,[c.project_id,c.month_key+'-01']):(await db.query(`SELECT * FROM service_assurance_rows WHERE project_id=$1 AND (left(raw_values->>'date',7)=$2 OR raw_values->>'date' ~ $3)`,[c.project_id,c.month_key,`^[0-9]{1,2}/0?${Number(c.month_key.slice(5))}/${c.month_key.slice(0,4)}$`])).map(r=>({...r.raw_values,id:r.id,project_id:r.project_id,version:r.version}));
+  const scope=delivery?"t.work_date >= $2::date AND t.work_date < ($2::date+interval '1 month')":"(left(t.raw_values->>'date',7)=$2 OR t.raw_values->>'date' ~ $3)";
+  const args=delivery?[c.project_id,c.month_key+'-01']:[c.project_id,c.month_key,`^[0-9]{1,2}/0?${Number(c.month_key.slice(5))}/${c.month_key.slice(0,4)}$`];
+  const table=delivery?'assurance_tickets':'service_assurance_rows';
+  const google=new GoogleSheetsClient(),revision=await google.revision(c.spreadsheet_id);
+  const remoteUnchanged=String(revision.version)===c.remote_revision;
+  let localCheckpoint:string|undefined;
+  if(remoteUnchanged){
+   // Fingerprint only record identity and versions; never transfer the month of JSON to check for edits.
+   const [check]=await db.query(`SELECT md5(coalesce(string_agg(t.id::text||':'||t.version::text,',' ORDER BY t.id),'')) AS checkpoint,
+    (SELECT l.details->>'local_checkpoint' FROM sheet_sync_logs l WHERE l.configuration_id=$${args.length+1} AND l.status='success' ORDER BY l.finished_at DESC LIMIT 1) AS previous
+    FROM ${table} t WHERE t.project_id=$1 AND ${scope}`,[...args,c.id]);
+   localCheckpoint=check?.checkpoint;
+   if(localCheckpoint&&localCheckpoint===check.previous)return {status:'unchanged',records:0,fast_path:true,local_checkpoint:localCheckpoint};
+  }
+  const all=delivery?await db.query(`SELECT t.*,p.full_name technician_name,c.full_name controller_name FROM assurance_tickets t LEFT JOIN profiles p ON p.id=t.technician_id LEFT JOIN profiles c ON c.id=t.controller_id WHERE t.project_id=$1 AND ${scope} ORDER BY t.id`,args):(await db.query(`SELECT t.* FROM service_assurance_rows t WHERE t.project_id=$1 AND ${scope}`,args)).map(r=>({...r.raw_values,id:r.id,project_id:r.project_id,version:r.version}));
   const locals=new Map<string,{record:any;values:Values}>();
   for(const record of all){const values=delivery?{...orderValues(record),...record.spreadsheet_fields?.delivery}:Object.fromEntries([...serviceAssuranceFields.map(f=>f.key),...(c.columns as SyncColumn[]).map(x=>x.key)].filter(k=>typeof record[k]==='string').map(k=>[k,String(record[k]??'')]));if((delivery?String(record.work_date instanceof Date?record.work_date.toISOString().slice(0,10):record.work_date).slice(0,7):recordMonth(values[dateKey]))===c.month_key)locals.set(record.id,{record,values});}
-  const google=new GoogleSheetsClient(),revision=await google.revision(c.spreadsheet_id);
   const snapshots=await db.query('SELECT * FROM sheet_sync_records WHERE configuration_id=$1',[c.id]);
   const byId=new Map(snapshots.map(s=>[s.record_id,s]));
-  if(String(revision.version)===c.remote_revision){await this.proposals(c,locals,byId);return {status:'unchanged',records:0};}
+  if(remoteUnchanged){await this.proposals(c,locals,byId);return {status:'unchanged',records:0,local_checkpoint:localCheckpoint};}
   const reader=new SheetReader(google),sheet=await reader.read(c.spreadsheet_id,c.tab_name,fields,snapshots.length===0);
   if(!sheet.columns.some(x=>x.key===dateKey)&&!snapshots.length)throw new BadRequestException('Initial import requires the controller Date column for monthly routing');
   const technicians=await db.query("SELECT id,full_name FROM profiles WHERE role='technician' AND is_active");
@@ -111,17 +127,17 @@ export class SheetSyncService{
   // Column metadata changes never remove historical operational values.
   if(JSON.stringify(columns)!==JSON.stringify(c.columns))await db.query('UPDATE sheet_configurations SET columns=$2 WHERE id=$1',[c.id,JSON.stringify(columns)]);
   let changed=0;
-  for(const row of rows){
-   if(skipped.has(row.index)||!seen.has(row.id))continue;
-   const snapshot=byId.get(row.id),local=locals.get(row.id);
-   if(!snapshot&&local&&(local.values.ticket_number?.trim()!==row.values.ticket_number?.trim()||!delivery&&gridDate(local.values[dateKey],false)!==gridDate(row.values[dateKey],false)))throw new ConflictException('Initial record identifier does not match its existing ticket and Date. Review identifiers before importing.');
-   if(snapshot&&sameValues(snapshot.remote_values,row.values))continue;
-   const base=snapshot?.remote_values||row.values,merged=snapshot&&local?mergeCells(base,local.values,row.values).merged:{...local?.values,...row.values};
-   // Record a recoverable proposal before applying a conflicting Google value.
-   if(local&&!sameValues(local.values,merged))await this.propose(c.id,row.id,base,local.values);
-   await db.transaction(async tx=>{
-    const table=delivery?'assurance_tickets':'service_assurance_rows';
-    if(!delivery)await tx.query('SELECT id FROM projects WHERE id=$1 FOR UPDATE',[c.project_id]);
+  const changedRows=rows.filter(row=>!skipped.has(row.index)&&seen.has(row.id)&&(!byId.has(row.id)||!sameValues(byId.get(row.id).remote_values,row.values)));
+  for(let offset=0;offset<changedRows.length;offset+=40)await db.transaction(async tx=>{
+   const batch=changedRows.slice(offset,offset+40);
+   const saved=[];
+   if(!delivery)await tx.query('SELECT id FROM projects WHERE id=$1 FOR UPDATE',[c.project_id]);
+   for(const row of batch){
+    const snapshot=byId.get(row.id),local=locals.get(row.id);
+    if(!snapshot&&local&&(local.values.ticket_number?.trim()!==row.values.ticket_number?.trim()||!delivery&&gridDate(local.values[dateKey],false)!==gridDate(row.values[dateKey],false)))throw new ConflictException('Initial record identifier does not match its existing ticket and Date. Review identifiers before importing.');
+    const base=snapshot?.remote_values||row.values,merged=snapshot&&local?mergeCells(base,local.values,row.values).merged:{...local?.values,...row.values};
+    // Record a recoverable proposal before applying a conflicting Google value.
+    if(local&&!sameValues(local.values,merged))await this.propose(c.id,row.id,base,local.values,tx);
     await tx.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[row.id]);
     const [current]=await tx.query(`SELECT id,project_id,version FROM ${table} WHERE id=$1 FOR UPDATE`,[row.id]);
     if(current&&(current.project_id!==c.project_id||!local))throw new ConflictException('Record identifier belongs to a different project or month; review the sheet identifier');
@@ -131,20 +147,33 @@ export class SheetSyncService{
      if(delivery)await new ServiceDelivery(tx).saveOrder(body,actor,{sheetImport:true});else await new ServiceAssurance(tx).save(body,actor,{sheetImport:true});
      changed++;
     }
-    await tx.query(`UPDATE sheet_sync_proposals SET status='superseded' WHERE configuration_id=$1 AND record_id=$2 AND status<>'superseded' AND NOT EXISTS (SELECT 1 FROM jsonb_each_text(proposed_values) p WHERE p.value IS DISTINCT FROM base_values->>p.key AND p.value IS DISTINCT FROM $3::jsonb->>p.key)`,[c.id,row.id,JSON.stringify(row.values)]);
-    await tx.query(`INSERT INTO sheet_sync_records(configuration_id,record_id,remote_values,last_local_values) VALUES($1,$2,$3,$4) ON CONFLICT(configuration_id,record_id) DO UPDATE SET remote_values=EXCLUDED.remote_values,last_local_values=EXCLUDED.last_local_values,remote_deleted=false,updated_at=now()`,[c.id,row.id,JSON.stringify(row.values),JSON.stringify(merged)]);
-   });
-  }
-  for(const old of snapshots)if(!seen.has(old.record_id))await db.query('UPDATE sheet_sync_records SET remote_deleted=true,updated_at=now() WHERE configuration_id=$1 AND record_id=$2 AND NOT remote_deleted',[c.id,old.record_id]);
+    saved.push({record_id:row.id,remote_values:row.values,last_local_values:merged});
+   }
+   const payload=JSON.stringify(saved);
+   const records="jsonb_to_recordset($2::jsonb) AS r(record_id uuid,remote_values jsonb,last_local_values jsonb)";
+   await tx.query(`UPDATE sheet_sync_proposals p SET status='superseded' FROM ${records} WHERE p.configuration_id=$1 AND p.record_id=r.record_id AND p.status<>'superseded' AND NOT EXISTS (SELECT 1 FROM jsonb_each_text(p.proposed_values) v WHERE v.value IS DISTINCT FROM p.base_values->>v.key AND v.value IS DISTINCT FROM r.remote_values->>v.key)`,[c.id,payload]);
+   await tx.query(`INSERT INTO sheet_sync_records(configuration_id,record_id,remote_values,last_local_values) SELECT $1,r.record_id,r.remote_values,r.last_local_values FROM ${records} WHERE true ON CONFLICT(configuration_id,record_id) DO UPDATE SET remote_values=EXCLUDED.remote_values,last_local_values=EXCLUDED.last_local_values,remote_deleted=false,updated_at=now()`,[c.id,payload]);
+  });
+  const missing=snapshots.filter(s=>!seen.has(s.record_id));
+  if(missing.length)await db.query('UPDATE sheet_sync_records SET remote_deleted=true,updated_at=now() WHERE configuration_id=$1 AND record_id=ANY($2::uuid[]) AND NOT remote_deleted',[c.id,missing.map(s=>s.record_id)]);
   await this.proposals(c,locals,byId);
   // Store the version observed before reads. Metadata writes cause one extra scan, never missed updates.
   await db.query('UPDATE sheet_configurations SET remote_revision=$2 WHERE id=$1',[c.id,String(revision.version)]);
-  return {status:'synchronized',records:changed,duplicates_skipped:duplicates,existing_outside_month_skipped:outsideMonthSkipped,missing_preserved:snapshots.filter(s=>!seen.has(s.record_id)).length};
+  return {status:'synchronized',records:changed,duplicates_skipped:duplicates,existing_outside_month_skipped:outsideMonthSkipped,missing_preserved:missing.length};
  }
- private async propose(configuration:string,record:string,base:Values,values:Values){
-  await db.query(`INSERT INTO sheet_sync_proposals(configuration_id,record_id,base_values,proposed_values,fingerprint) VALUES($1,$2,$3,$4,$5) ON CONFLICT(configuration_id,record_id,fingerprint) DO UPDATE SET status='pending' WHERE sheet_sync_proposals.status='superseded'`,[configuration,record,JSON.stringify(base),JSON.stringify(values),fingerprint({base,values})]);
+ private async propose(configuration:string,record:string,base:Values,values:Values,database=db){
+  await database.query(`INSERT INTO sheet_sync_proposals(configuration_id,record_id,base_values,proposed_values,fingerprint) VALUES($1,$2,$3,$4,$5) ON CONFLICT(configuration_id,record_id,fingerprint) DO UPDATE SET status='pending' WHERE sheet_sync_proposals.status='superseded'`,[configuration,record,JSON.stringify(base),JSON.stringify(values),fingerprint({base,values})]);
  }
  private async proposals(c:any,locals:Map<string,{record:any;values:Values}>,snapshots:Map<any,any>){
-  for(const [id,local] of locals){const snapshot=snapshots.get(id);if(!snapshot||!sameValues(local.values,snapshot.last_local_values))await this.propose(c.id,id,snapshot?.remote_values||{},local.values);}
+  const changes=[];
+  for(const [id,local] of locals){
+   const snapshot=snapshots.get(id);
+   if(snapshot&&sameValues(local.values,snapshot.last_local_values))continue;
+   const base=snapshot?.remote_values||{},values=local.values;
+   changes.push({record_id:id,base_values:base,proposed_values:values,fingerprint:fingerprint({base,values})});
+  }
+  for(let i=0;i<changes.length;i+=100)await db.query(`INSERT INTO sheet_sync_proposals(configuration_id,record_id,base_values,proposed_values,fingerprint)
+   SELECT $1,p.record_id,p.base_values,p.proposed_values,p.fingerprint FROM jsonb_to_recordset($2::jsonb) AS p(record_id uuid,base_values jsonb,proposed_values jsonb,fingerprint text) WHERE true
+   ON CONFLICT(configuration_id,record_id,fingerprint) DO UPDATE SET status='pending' WHERE sheet_sync_proposals.status='superseded'`,[c.id,JSON.stringify(changes.slice(i,i+100))]);
  }
 }

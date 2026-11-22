@@ -12,6 +12,8 @@
 4. Open Controller → Configuration, select a project/month, paste the Google Sheets URL, and enter the exact tab title. Save verifies spreadsheet access and tab existence. Use Sync now for the first import; inspect status/errors before enabling unattended use.
 5. In Projects, choose a configured monthly sheet view to see its current columns. All-record view retains the existing project's columns. Column metadata refreshes every 30 seconds; saved records stream through Supabase Realtime. Database Realtime publication and RLS changes are required for that stream.
 
+The cron trigger can process two separate spreadsheets at once when the database pool has at least four connections. Tabs in the same file still run in order. Volume imports commit in chunks of up to 40 records. After an unchanged Google revision has been checked once, an unchanged local record/version checkpoint lets subsequent runs skip the full record scan; queued outbound writes still run. Sync logs include inbound and outbound elapsed milliseconds and indicate when this fast path was used.
+
 ## Data ownership and outbound review
 
 - Active Service Delivery uses `assurance_tickets.work_date`; the stored project code is `SERVICE_ASSURANCE` because of the existing display-name swap. Active Service Assurance uses `service_assurance_rows.raw_values.date`, the controller's column A Date; its project code is `SERVICE_DELIVERY`.
