@@ -12,7 +12,7 @@ import {GoogleSheetsClient} from './google-client';
 import {stageProposals} from './proposal-gateway';
 import {SheetReader} from './sheet-reader';
 import {gridDate} from '../assurance-tickets/grid-values';
-import {recordMonth,mergeCells,sameValues,type Values,type SyncColumn} from './sync-model';
+import {controllerDate,recordMonth,mergeCells,sameValues,type Values,type SyncColumn} from './sync-model';
 const fingerprint=(v:unknown)=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
 export class SheetSyncService{
  async run(id:string,actor:Actor){
@@ -58,7 +58,7 @@ export class SheetSyncService{
   const technicians=await db.query("SELECT id,full_name FROM profiles WHERE role='technician' AND is_active");
   const teamKey=delivery?'technician_id':'team';
   const normalize=(values:Values)=>{
-   if(delivery&&values[dateKey])values[dateKey]=gridDate(values[dateKey],false)||values[dateKey];
+   if(values[dateKey])values[dateKey]=controllerDate(values[dateKey],c.month_key)||values[dateKey];
    const team=values[teamKey]?.trim();
    if(!team)return;
    const byId=technicians.find(t=>t.id===team.toLowerCase());
@@ -69,7 +69,7 @@ export class SheetSyncService{
   const assignments:Array<{index:number;id:string}>=[],seen=new Set<string>();
   for(const row of sheet.rows){
    const month=recordMonth(row.values[dateKey]||locals.get(row.id)?.values[dateKey]||'');
-   if(!month)throw new BadRequestException(`Row ${row.index+1} has no valid controller Date. Use YYYY-MM-DD or DD/MM/YYYY.`);
+   if(!month)throw new BadRequestException(`Row ${row.index+1} has no valid controller Date. Use YYYY-MM-DD, DD/MM/YYYY, or D-MMM (for example, 1-Sep).`);
    if(month!==c.month_key){if(byId.has(row.id))throw new ConflictException('A synchronized row moved to another month. Review its Date and configuration before retrying.');continue;}
    if(!row.id){
     const candidates=[...locals].filter(([,l])=>!!row.values.ticket_number?.trim()&&l.values.ticket_number?.trim()===row.values.ticket_number.trim()&&gridDate(l.values[dateKey],false)===gridDate(row.values[dateKey],false));

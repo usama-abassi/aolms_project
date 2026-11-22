@@ -6,7 +6,7 @@ export function timestampShortcut(shift:boolean,alt:boolean){
  const date=`${parts.year}-${parts.month}-${parts.day}`,time=`${parts.hour}:${parts.minute}:${parts.second}`;
  return shift?(alt?`${date} ${time}`:time):date;
 }
-export default function PlainTextCell({value,label,cell,readOnly,error,onCommit,onMove,onSelect,onCache}:{value:string;label:string;cell:string;readOnly:boolean;error?:string;onCommit:(value:string)=>void;onMove:(key:string,shift:boolean)=>void;onSelect:()=>void;onCache:(value:string|null)=>void}){
+export default function PlainTextCell({value,displayValue,label,cell,readOnly,error,onCommit,onMove,onSelect,onCache}:{value:string;displayValue?:string;label:string;cell:string;readOnly:boolean;error?:string;onCommit:(value:string)=>void;onMove:(key:string,shift:boolean)=>void;onSelect:()=>void;onCache:(value:string|null)=>void}){
  const [editing,setEditing]=useState(false),[text,setText]=useState(value);
  const input=useRef<HTMLTextAreaElement>(null),buffer=useRef(value),original=useRef(value),editingRef=useRef(false);
  const direct=useRef(false);
@@ -39,7 +39,7 @@ export default function PlainTextCell({value,label,cell,readOnly,error,onCommit,
   const el=input.current!,a=el.selectionStart,b=el.selectionEnd,next=buffer.current.slice(0,a)+insert+buffer.current.slice(b);
   caret.current=a+insert.length;buffer.current=next;setText(next);onCache(next);
  }
- return <textarea ref={input} aria-label={label} aria-readonly={readOnly} aria-invalid={!!error} title={error||(readOnly?'Automatic field (read-only)':undefined)} data-cell={cell} data-editing={editing} rows={Math.max(1,Math.min(5,text.split('\n').length))} value={text} readOnly={readOnly||!editing}
+ return <textarea ref={input} aria-label={label} aria-readonly={readOnly} aria-invalid={!!error} title={error||(displayValue!==undefined&&displayValue!==value?value:undefined)||(readOnly?'Automatic field (read-only)':undefined)} data-cell={cell} data-editing={editing} rows={Math.max(1,Math.min(5,text.split('\n').length))} value={editing?text:displayValue??text} readOnly={readOnly||!editing}
   className={`block w-full min-w-48 resize-none border-0 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 ${readOnly?'bg-neutral-100 text-neutral-500 dark:bg-neutral-800':'bg-transparent'}`}
   onFocus={()=>{if(!editingRef.current){original.current=value;buffer.current=value;} }}
   onPointerDown={()=>{onSelect();}}
