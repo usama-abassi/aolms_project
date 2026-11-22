@@ -3,31 +3,61 @@ import {ConflictException} from '@/lib/http';
 import {SheetReader} from './sheet-reader';
 import {controllerFields} from '../service-delivery/model';
 import {serviceAssuranceFields} from '@/lib/service-assurance-fields';
+import {controllerDate} from './sync-model';
 import {gridDate} from '../assurance-tickets/grid-values';
 import {db} from '@/lib/db';
 import {GoogleSheetsClient} from './google-client';
-// Existing records use an append-only review tab. New UUID records may append; controller cells are never overwritten.
-export async function stageProposals(configuration:any,google=new GoogleSheetsClient()){
- let pending=await db.query("SELECT * FROM sheet_sync_proposals WHERE configuration_id=$1 AND status='pending' ORDER BY created_at,id",[configuration.id]);
+// The sync service serializes outbound work per spreadsheet.
+export async function applyOutboundChanges(c:any,google=new GoogleSheetsClient()){
+ const pending=await db.query("SELECT * FROM sheet_sync_proposals WHERE configuration_id=$1 AND status IN ('pending','staged') ORDER BY created_at,id",[c.id]);
  if(!pending.length)return 0;
- await appendNewRecords(configuration,pending,google);
- pending=await db.query("SELECT * FROM sheet_sync_proposals WHERE configuration_id=$1 AND status='pending' ORDER BY created_at,id",[configuration.id]);
- if(!pending.length)return 0;
- const base=`sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(configuration.spreadsheet_id)}`,title='__AOLMS_Proposals';
- if(configuration.tab_name===title)throw new Error('The proposal review tab cannot be configured as a controller data tab');
- const document=await google.request(base+'?fields=sheets.properties');
- if(!document.sheets.some((s:any)=>s.properties.title===title))await google.request(base+':batchUpdate',{method:'POST',body:JSON.stringify({requests:[{addSheet:{properties:{title}}}]})});
- const range=encodeURIComponent("'"+title+"'!A:J");
- const existing=await google.request(base+'/values/'+range);
- const ids=new Set((existing.values||[]).map((r:any[])=>r[0]));
- const rows=pending.flatMap(p=>Object.keys(p.proposed_values).filter(key=>(p.proposed_values[key]??'')!==(p.base_values[key]??'')).map(key=>[p.id+':'+key,p.id,configuration.id,p.record_id,configuration.tab_name,String(configuration.month_key),key,String(p.base_values[key]??''),String(p.proposed_values[key]??''),'Pending review — copy approved values to the controller tab'])).filter(row=>!ids.has(row[0]));
- if(rows.length){
-  const values=[...rows];
-  if(!existing.values?.length)values.unshift(['Entry ID','Proposal ID','Configuration ID','Record ID','Controller tab','Month','Field','Base Sheet value','AOLMS proposed value','Review']);
-  for(let offset=0;offset<values.length;offset+=200)await google.request(base+'/values/'+range+':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',{method:'POST',body:JSON.stringify({values:values.slice(offset,offset+200)})});
+ await appendNewRecords(c,pending.filter(p=>p.status==='pending'),google);
+ const delivery=c.code==='SERVICE_ASSURANCE';
+ const queued=await db.query(`SELECT p.*,s.remote_values,
+  ${delivery?"t.spreadsheet_fields->'delivery'":"t.raw_values"} AS current_values
+  FROM sheet_sync_proposals p JOIN sheet_sync_records s USING(configuration_id,record_id)
+  JOIN ${delivery?'assurance_tickets':'service_assurance_rows'} t ON t.id=p.record_id AND t.project_id=$2
+  WHERE p.configuration_id=$1 AND p.status IN ('pending','staged') AND NOT s.remote_deleted
+  ORDER BY p.created_at,p.id`,[c.id,c.project_id]);
+ if(!queued.length)return 0;
+ const sheet=await new SheetReader(google).read(c.spreadsheet_id,c.tab_name,delivery?controllerFields:serviceAssuranceFields,false);
+ const teamKey=delivery?'technician_id':'team',dateKey=delivery?'work_date':'date';
+ const technicians=await db.query("SELECT id,full_name FROM profiles WHERE role='technician' AND is_active");
+ const normalize=(key:string,value:string)=>{
+  if(key===dateKey||delivery&&key==='appointment')return controllerDate(value,c.month_key)||value;
+  if(key===teamKey&&value.trim()){
+   const matches=technicians.filter(t=>t.full_name.trim().toLowerCase()===value.trim().toLowerCase());
+   return technicians.find(t=>t.id===value.trim().toLowerCase())?.id??(matches.length===1?matches[0].id:value);
+  }
+  return value;
+ };
+ const requests=new Map<string,any>(),completed=[];
+ for(const p of queued){
+  const matching=sheet.rows.filter(r=>r.id===p.record_id);
+  // When a duplicate ticket has several copies of the same ID, the last row is authoritative.
+  const row=matching.at(-1);
+  if(!row)continue;
+  const ticket=row.values.ticket_number?.trim();
+  if(ticket&&sheet.rows.some(r=>r.index>row.index&&r.values.ticket_number?.trim()===ticket))continue;
+  let resolved=true;
+  for(const [key,proposed] of Object.entries(p.proposed_values)){
+   const next=String(proposed??''),base=String(p.base_values[key]??'');
+   if(next===base||next!==String(p.current_values?.[key]??''))continue;
+   const col=sheet.columns.find(x=>x.key===key);
+   if(!col){resolved=false;continue;}
+   const remote=normalize(key,row.values[key]??'');
+   if(remote===next)continue;
+   if(remote!==base||String(p.remote_values[key]??'')!==base){resolved=false;continue;}
+   const value=key===teamKey?technicians.find(t=>t.id===next)?.full_name??next:next;
+   requests.set(`${row.index}:${col.index}`,{updateCells:{start:{sheetId:sheet.sheetId,rowIndex:row.index,columnIndex:col.index},rows:[{values:[value?{userEnteredValue:{stringValue:value}}:{}]}],fields:'userEnteredValue'}});
+  }
+  if(resolved)completed.push(p.id);
  }
- await db.query("UPDATE sheet_sync_proposals SET status='staged' WHERE id=ANY($1::uuid[])",[pending.map(p=>p.id)]);
- return rows.length;
+ const base=`sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(c.spreadsheet_id)}`;
+ const writes=[...requests.values()];
+ for(let i=0;i<writes.length;i+=200)await google.request(base+':batchUpdate',{method:'POST',body:JSON.stringify({requests:writes.slice(i,i+200)})});
+ if(completed.length)await db.query("UPDATE sheet_sync_proposals SET status='superseded' WHERE id=ANY($1::uuid[])",[completed]);
+ return writes.length;
 }
 
 async function appendNewRecords(c:any,proposals:any[],google:GoogleSheetsClient){

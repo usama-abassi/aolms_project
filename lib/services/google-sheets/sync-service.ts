@@ -9,7 +9,7 @@ import {serviceAssuranceFields} from '@/lib/service-assurance-fields';
 import {ServiceDelivery} from '../service-delivery/service';
 import {ServiceAssurance} from '../service-assurance';
 import {GoogleSheetsClient} from './google-client';
-import {stageProposals} from './proposal-gateway';
+import {applyOutboundChanges} from './proposal-gateway';
 import {SheetReader} from './sheet-reader';
 import {gridDate} from '../assurance-tickets/grid-values';
 import {controllerDate,isRecordIdentifierHeader,recordMonth,mergeCells,sameValues,type Values,type SyncColumn} from './sync-model';
@@ -29,8 +29,8 @@ export class SheetSyncService{
    await db.query("UPDATE sheet_configurations SET last_attempt_at=now(),sync_status='running',latest_error=NULL WHERE id=$1",[id]);
    try{
     const result=await this.process(c,actor);
-    const staged=await stageProposals(c);
-    Object.assign(result,{proposals_staged:staged});
+    const updated=await applyOutboundChanges(c);
+    Object.assign(result,{outbound_cells_updated:updated});
     await db.query("UPDATE sheet_configurations SET last_success_at=now(),last_checked_at=now(),sync_status='success',latest_error=NULL WHERE id=$1",[id]);
     await db.query("UPDATE sheet_sync_logs SET finished_at=now(),status='success',details=$2 WHERE id=$1",[log.id,JSON.stringify(result)]);
     return result;
@@ -142,7 +142,7 @@ export class SheetSyncService{
   return {status:'synchronized',records:changed,duplicates_skipped:duplicates,existing_outside_month_skipped:outsideMonthSkipped,missing_preserved:snapshots.filter(s=>!seen.has(s.record_id)).length};
  }
  private async propose(configuration:string,record:string,base:Values,values:Values){
-  await db.query(`INSERT INTO sheet_sync_proposals(configuration_id,record_id,base_values,proposed_values,fingerprint) VALUES($1,$2,$3,$4,$5) ON CONFLICT(configuration_id,record_id,fingerprint) DO NOTHING`,[configuration,record,JSON.stringify(base),JSON.stringify(values),fingerprint({base,values})]);
+  await db.query(`INSERT INTO sheet_sync_proposals(configuration_id,record_id,base_values,proposed_values,fingerprint) VALUES($1,$2,$3,$4,$5) ON CONFLICT(configuration_id,record_id,fingerprint) DO UPDATE SET status='pending' WHERE sheet_sync_proposals.status='superseded'`,[configuration,record,JSON.stringify(base),JSON.stringify(values),fingerprint({base,values})]);
  }
  private async proposals(c:any,locals:Map<string,{record:any;values:Values}>,snapshots:Map<any,any>){
   for(const [id,local] of locals){const snapshot=snapshots.get(id);if(!snapshot||!sameValues(local.values,snapshot.last_local_values))await this.propose(c.id,id,snapshot?.remote_values||{},local.values);}
