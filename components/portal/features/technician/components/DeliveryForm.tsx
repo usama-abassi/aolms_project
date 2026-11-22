@@ -1,4 +1,5 @@
 'use client';
+import {LoadingState} from '@/components/portal/components/LoadingState';
 import React, { useState, useEffect } from 'react';
 import {useParams,useRouter} from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -201,7 +202,7 @@ const DeliveryForm: React.FC = () => {
   };
 
   if (user.error || orderError || submissionError) return <p role="alert">{user.error?.message || orderError?.message || submissionError?.message}</p>;
-  if (user.isPending || orderLoading || submissionLoading) return <p>Loading delivery form...</p>;
+  if (user.isPending || orderLoading || submissionLoading) return <LoadingState message="Loading delivery form…"/>;
   if (!order) {
     return (
       <div className="flex justify-center items-center h-64">

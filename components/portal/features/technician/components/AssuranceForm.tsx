@@ -1,4 +1,5 @@
 'use client';
+import {LoadingState} from '@/components/portal/components/LoadingState';
 import { randomId } from '../../../lib/uuid';
 import { useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -18,7 +19,7 @@ export default function AssuranceForm(){
  const {ticketId}=useParams<{ticketId:string}>();
  const user=useQuery({queryKey:['session-user-id'],queryFn:currentUserId});
  const query=useQuery({queryKey:['assurance-form',user.data,ticketId],enabled:!!user.data,queryFn:async()=>({...await api<FormDataResponse>(`/assurance-submissions/${ticketId}`),received_at:Date.now()}),refetchInterval:30000});
- if(user.isPending||query.isPending)return <p>Loading form...</p>;
+ if(user.isPending||query.isPending)return <LoadingState message="Loading form…"/>;
  if(query.error||user.error)return <p role="alert">{query.error?.message||user.error?.message}</p>;
  return <FormEditor key={`${user.data}:${ticketId}`} data={query.data!} ticketId={ticketId!} userId={user.data!} refresh={()=>query.refetch()}/>;
 }

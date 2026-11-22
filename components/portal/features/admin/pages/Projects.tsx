@@ -1,4 +1,5 @@
 'use client';
+import {LoadingState} from '@/components/portal/components/LoadingState';
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
@@ -164,7 +165,7 @@ const Projects: React.FC = () => {
         )}
         {isLoading ? (
           <div className="flex justify-center items-center h-32">
-            <div className="animate-pulse text-neutral-500 dark:text-neutral-400">Loading projects...</div>
+            <LoadingState/>
           </div>
         ) : projects?.length === 0 ? (
           <Card className="text-center py-12">

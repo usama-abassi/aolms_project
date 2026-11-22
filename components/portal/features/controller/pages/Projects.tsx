@@ -1,4 +1,5 @@
 'use client';
+import {LoadingState} from '@/components/portal/components/LoadingState';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {useSearchParams,useRouter,usePathname} from 'next/navigation';
@@ -18,7 +19,7 @@ export default function ControllerProjects(){
  const project=list.find(p=>p.id===params.get('project'))||list[0];
  const month=params.get('month')||'';
  const config=configs.data?.find(c=>c.project_id===project?.id&&c.month_key===month);
- if(projects.isPending||user.isPending)return <p>Loading projects...</p>;
+ if(projects.isPending||user.isPending)return <LoadingState message="Loading projects…"/>;
  if(projects.error||user.error)return <p role="alert">{projects.error?.message||user.error?.message}</p>;
  return <div className="space-y-4"><h1 className="text-h2 font-semibold">Projects</h1>
  <div role="tablist" aria-label="Projects" className="flex gap-2 overflow-x-auto border-b border-neutral-200 pb-2 dark:border-neutral-700">

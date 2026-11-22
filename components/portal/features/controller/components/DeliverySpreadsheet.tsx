@@ -1,4 +1,5 @@
 'use client';
+import {LoadingState} from '@/components/portal/components/LoadingState';
 import {displayControllerDate,recordMonth,type SyncColumn} from '@/lib/services/google-sheets/sync-model';
 import {supabase} from '@/lib/supabase-browser';
 import {randomId} from '../../../lib/uuid';
@@ -133,7 +134,7 @@ export default function DeliverySpreadsheet({projectId,userId,month='',columns}:
   const existing=gridPage(row,latest.records.length)===current?table.current?.querySelector<HTMLElement>(`[data-cell="${row}:0"]`):null;
   if(existing)existing.focus();else focus(row,0);
  }
- if(query.isPending||meta.isPending)return <p>Loading Service Delivery…</p>;
+ if(query.isPending||meta.isPending)return <LoadingState message="Loading Service Delivery…"/>;
  if(query.error||meta.error)return <p role="alert">{query.error?.message||meta.error?.message}</p>;
  const pending=rows.filter(r=>r.dirty).length,failed=rows.some(r=>r.error);
  return <section aria-label="Service Delivery" className="space-y-3 rounded-xl border border-neutral-200 bg-white p-3 dark:border-neutral-700 dark:bg-neutral-900 sm:p-4">

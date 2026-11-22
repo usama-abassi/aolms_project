@@ -1,4 +1,5 @@
 'use client';
+import {LoadingState} from '@/components/portal/components/LoadingState';
 import {useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {api} from '../../assurance/api';
@@ -15,7 +16,7 @@ export default function GoogleAccount(){
   <p className="text-sm text-neutral-500">Connect one Google account for all project and monthly spreadsheet connections. Use an account with Editor access to the configured sheets. Removing it pauses Google synchronization and keeps your configurations, saved AOLMS data, and technician responses.</p>
   {(error||account.error)&&<p role="alert" className="text-sm text-danger-600 dark:text-danger-400">{error||account.error?.message}</p>}
   {notice?<p role="status" className="text-sm">{notice}</p>:callback==='connected'&&account.data?.connected?<p role="status" className="text-sm">Google account connected.</p>:callback==='cancelled'?<p role="status" className="text-sm">Google authorization was cancelled. Your existing settings were retained.</p>:callback==='error'?<p role="alert" className="text-sm text-danger-600">Google authorization could not be completed. Try connecting again and approve the requested permissions.</p>:null}
-  {account.isPending?<p>Loading Google account…</p>:account.data&&<>
+  {account.isPending?<LoadingState message="Loading Google account…"/>:account.data&&<>
    <dl className="space-y-2 text-sm"><div><dt className="font-medium">Status</dt><dd>{account.data.connected?'Connected':'Not connected'}</dd></div>{account.data.connected&&<><div><dt className="font-medium">Google email</dt><dd className="break-all">{account.data.email}</dd></div><div><dt className="font-medium">Connected on</dt><dd>{account.data.connected_at?new Date(account.data.connected_at).toLocaleString():'—'}</dd></div></>}</dl>
    {!account.data.ready&&<p className="text-sm text-neutral-500">Google sign-in is not set up on this server yet. Ask an administrator to complete the one-time Google OAuth setup.</p>}
    {account.data.service_account_active&&<p className="text-sm text-neutral-500">The server service account is currently in use. Connecting here switches synchronization to your Google account.</p>}

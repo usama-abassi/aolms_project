@@ -338,14 +338,23 @@ for(const mod of ['Control','Meta'])test(`Phase 1 typing autosave and all shortc
 test('Delivery grid shows one save status and contains wide cells on mobile',async({page})=>{
  await fixtures(page,'controller','light');
  await page.setViewportSize({width:375,height:850});
- await page.route('**/api/service-delivery/workflow?*',route=>{
+ let finishLoad!:()=>void;
+ const responseReady=new Promise<void>(resolve=>{finishLoad=resolve;});
+ await page.route('**/api/service-delivery/workflow?*',async route=>{
   const params=new URL(route.request().url()).searchParams;
+  if(!params.has('mode'))await responseReady;
   return route.fulfill({json:params.has('mode')?{technicians:[]}:[{
    id:ticketId,version:1,work_date:'2026-09-26',ticket_number:'DEL-1001',
    spreadsheet_fields:{delivery:{work_date:'2026-09-26',ticket_number:'DEL-1001',technician_id:'Unmatched team',actioned:'Delivered'}}
   }]});
  });
  await page.goto('/controller/projects');
+ const loading=page.getByRole('status').filter({hasText:'Loading Service Delivery'});
+ try {
+  await expect(loading).toBeVisible();
+  await expect(page.getByRole('table',{name:'Service Delivery spreadsheet'})).toHaveCount(0);
+ } finally { finishLoad(); }
+ await expect(loading).toHaveCount(0);
  const section=page.getByRole('region',{name:'Service Delivery',exact:true});
  await expect(section.getByRole('status')).toHaveText('All changes saved');
  await expect(section.getByText('0 unsaved')).toHaveCount(0);

@@ -1,4 +1,5 @@
 'use client';
+import {LoadingState} from '@/components/portal/components/LoadingState';
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '../lib/utils';
 import { ChevronUp, ChevronDown } from 'lucide-react';
@@ -79,7 +80,9 @@ export function Table<T extends Record<string, any> = any>({
 
   if (isLoading) {
     return (
-      <div className="animate-pulse space-y-2">
+      <div className="space-y-2">
+        <LoadingState message="Loading records…"/>
+        <div aria-hidden="true" className="motion-safe:animate-pulse space-y-2">
         <div className="h-10 bg-neutral-100 dark:bg-neutral-800 rounded-md" />
         <div className="overflow-x-auto">
           <table className="min-w-full">
@@ -100,6 +103,7 @@ export function Table<T extends Record<string, any> = any>({
               ))}
             </tbody>
           </table>
+        </div>
         </div>
       </div>
     );

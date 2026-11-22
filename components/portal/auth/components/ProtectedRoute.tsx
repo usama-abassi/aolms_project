@@ -1,4 +1,5 @@
 'use client';
+import {LoadingState} from '@/components/portal/components/LoadingState';
 import React from 'react';
 import {usePathname} from 'next/navigation';
 import {ClientRedirect} from '@/components/ClientRedirect';
@@ -13,7 +14,7 @@ export const ProtectedRoute: React.FC<{children:React.ReactNode}> = ({children})
   if(error||!profile?.is_active)return null;
   return profile.role as string;
  }});
- if(access.isPending)return <div className="p-8">Checking access...</div>;
+ if(access.isPending)return <LoadingState message="Checking access…"/>;
  if(!access.data || access.error || pathname.split('/')[1]!==access.data)return <ClientRedirect href="/login"/>;
  return <>{children}</>;
 };

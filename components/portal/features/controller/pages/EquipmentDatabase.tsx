@@ -1,4 +1,5 @@
 'use client';
+import {LoadingState} from '@/components/portal/components/LoadingState';
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../assurance/api';
@@ -32,7 +33,7 @@ export default function EquipmentDatabase({kind}:{kind:'ont'|'cpe'}) {
   </nav>
   <div className="grid gap-3 sm:grid-cols-[1fr_180px]"><label className="min-w-0">Search<input className={control} placeholder="Serial, order, PO or any field" value={search} onChange={e=>setSearch(e.target.value)}/></label><label>Source year<select className={control} value={year} onChange={e=>{setYear(e.target.value);setPage(1)}}><option value="">All years</option>{meta.data?.years.map(y=><option key={y}>{y}</option>)}</select></label></div>
   {(meta.error||records.error)&&<div role="alert" className="text-red-600 dark:text-red-300">{(meta.error||records.error)?.message}<button className="ml-3 underline" onClick={()=>{void meta.refetch();void records.refetch()}}>Retry</button></div>}
-  {meta.isPending||(!!category&&records.isPending)?<p role="status">Loading records…</p>:<>
+  {meta.isPending||(!!category&&records.isPending)?<LoadingState message="Loading records…"/>:<>
    <div className="max-w-full overflow-auto rounded-xl border border-neutral-200 dark:border-neutral-700"><table className="w-full text-left text-sm"><thead className="bg-neutral-100 dark:bg-neutral-800"><tr><th className="p-3">Action</th>{fields.map(f=><th className="whitespace-nowrap p-3" key={f}>{label(f)}</th>)}</tr></thead><tbody>{records.data?.rows.map(row=><tr key={row.id} className="border-t border-neutral-200 bg-white dark:border-neutral-700 dark:bg-neutral-900"><td className="sticky left-0 bg-white p-2 dark:bg-neutral-900"><button className="task-action" onClick={()=>open(row)}>Edit</button></td>{fields.map(f=><td className="max-w-xs whitespace-nowrap p-3" key={f}>{row.data[f]??'—'}</td>)}</tr>)}</tbody></table></div>
    {!records.error&&records.data?.total===0&&<p>No matching records.</p>}
    <div className="flex flex-wrap items-center justify-between gap-3">

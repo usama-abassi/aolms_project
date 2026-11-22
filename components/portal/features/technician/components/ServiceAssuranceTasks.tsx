@@ -1,4 +1,5 @@
 'use client';
+import {LoadingState} from '@/components/portal/components/LoadingState';
 import {useState,useRef,useEffect} from 'react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {api} from '../../assurance/api';
@@ -35,7 +36,7 @@ function ResponseForm({id,userId,close}:{id:string;userId:string;close:()=>void}
   }catch(e){setError((e as Error).message);}finally{saving.current=false;setBusy(false);}
  }
  return <Modal isOpen onClose={()=>{if(!busy)close();}} title={submitted?'Edit Service Assurance response':'Service Assurance materials'} size="full" closeOnEscape={!busy} closeOnOverlayClick={!busy}>
- {query.isPending?<p>Loading response…</p>:query.error?<p role="alert">{query.error.message}</p>:<form onSubmit={e=>void submit(e)} className="space-y-4"><p className="text-sm text-neutral-500">Ticket details are prefilled. Changes are cached on this device. Save draft or submit for Audit.</p>
+ {query.isPending?<LoadingState message="Loading response…"/>:query.error?<p role="alert">{query.error.message}</p>:<form onSubmit={e=>void submit(e)} className="space-y-4"><p className="text-sm text-neutral-500">Ticket details are prefilled. Changes are cached on this device. Save draft or submit for Audit.</p>
  <fieldset disabled={busy} className="grid gap-4 sm:grid-cols-2">{serviceAssuranceResponseFields.map(key=>{
  const readOnly=Object.hasOwn(responseIdentifiers,key)||key==='Timestamp'
  const value=edits[key]??query.data!.values[key]??''

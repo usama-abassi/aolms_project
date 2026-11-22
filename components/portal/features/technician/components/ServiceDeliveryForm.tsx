@@ -1,4 +1,5 @@
 'use client';
+import {LoadingState} from '@/components/portal/components/LoadingState';
 import {randomId} from '../../../lib/uuid';
 import {useEffect,useRef,useState} from 'react';
 import {useParams} from 'next/navigation';
@@ -12,7 +13,7 @@ export default function ServiceDeliveryForm(){
  const params=useParams<{ticketId:string}>(),id=params.ticketId;
  const user=useQuery({queryKey:['session-user-id'],queryFn:currentUserId});
  const query=useQuery({queryKey:['delivery-form',id,user.data],enabled:!!user.data,queryFn:()=>api<any>(`/service-delivery/workflow/${id}`)});
- if(query.isPending)return <p>Loading form…</p>;if(query.error)return <p role="alert">{query.error.message}</p>;
+ if(query.isPending)return <LoadingState message="Loading form…"/>;if(query.error)return <p role="alert">{query.error.message}</p>;
  return <Form key={`${user.data}:${id}`} id={id} userId={user.data!} initial={query.data}/>;
 }
 function Form({id,userId,initial}:{id:string;userId:string;initial:any}){

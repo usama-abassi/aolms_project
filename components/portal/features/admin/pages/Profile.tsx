@@ -1,4 +1,5 @@
 'use client';
+import {LoadingState} from '@/components/portal/components/LoadingState';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase-browser';
 import { Card } from '../../../components/Card';
@@ -48,7 +49,7 @@ const Profile: React.FC = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-pulse text-neutral-500 dark:text-neutral-400">Loading...</div>
+        <LoadingState/>
       </div>
     );
   }

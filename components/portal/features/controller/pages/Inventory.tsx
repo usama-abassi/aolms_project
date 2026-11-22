@@ -1,4 +1,5 @@
 'use client';
+import {LoadingState} from '@/components/portal/components/LoadingState';
 import {useRef,useState} from 'react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {useSearchParams,useRouter,usePathname} from 'next/navigation';
@@ -24,7 +25,7 @@ export default function Inventory(){
  const list=projects.data||[];
  const project=list.find(p=>p.id===params.get('project'))||list.find(p=>p.code==='SERVICE_ASSURANCE')||list[0];
  return <div className="space-y-5"><div><h1 className="text-h2 font-semibold">Inventory</h1><p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">Monthly material stock by project</p></div>
- {projects.isPending&&<p>Loading projects…</p>}{projects.error&&<p role="alert">{projects.error.message}</p>}
+ {projects.isPending&&<LoadingState message="Loading projects…"/>}{projects.error&&<p role="alert">{projects.error.message}</p>}
  <div className="flex items-center gap-3 border-b pb-2 dark:border-neutral-700"><div role="tablist" aria-label="Inventory projects" className="flex min-w-0 flex-1 gap-2 overflow-x-auto">{list.map(p=><button key={p.id} role="tab" aria-selected={p.id===project?.id} onClick={()=>{setHistoryOpen(false);router.push(path+'?'+new URLSearchParams({project:p.id}));}} className={`shrink-0 rounded-lg px-4 py-2 text-sm ${p.id===project?.id?'bg-primary-600 text-white':'bg-neutral-100 dark:bg-neutral-800'}`}>{p.name}</button>)}</div><Button className="shrink-0" variant="outline" disabled={!project} onClick={()=>setHistoryOpen(true)}>Request history</Button></div>
  {project&&<ProjectInventory key={project.id} project={project} historyOpen={historyOpen} onCloseHistory={()=>setHistoryOpen(false)}/>}
  {!projects.isPending&&!projects.error&&!project&&<p>No projects configured.</p>}

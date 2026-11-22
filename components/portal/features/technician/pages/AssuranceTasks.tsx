@@ -1,4 +1,5 @@
 'use client';
+import {LoadingState} from '@/components/portal/components/LoadingState';
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -20,7 +21,7 @@ export default function AssuranceTasks({ todo = false, audit = false, projectId 
     queryKey: [audit ? 'assurance-audit' : 'assurance-tasks', user.data, projectId], enabled: !!user.data,
     queryFn: () => api<AuditData>(`/assurance-submissions/${audit ? 'audit' : 'tasks'}${audit&&projectId?'?project_id='+encodeURIComponent(projectId):''}`), refetchInterval: 60000,
   });
-  if (user.isPending || tasks.isPending) return <p>Loading tasks...</p>;
+  if (user.isPending || tasks.isPending) return <LoadingState message="Loading tasks…"/>;
   if (user.error || tasks.error) return <p role="alert">{user.error?.message || tasks.error?.message}</p>;
   const rows = (tasks.data?.rows || []).filter(r => audit
     ? filter === 'all' || (filter === 'completed' ? r.completed : !r.completed)
@@ -75,7 +76,7 @@ export default function AssuranceTasks({ todo = false, audit = false, projectId 
 function AuditDetails({ row }: { row: AuditRow }) {
   const details = useQuery({ queryKey: ['audit-details', row.id, row.submission_technician_id],
     queryFn: () => api<FormDataResponse>(`/assurance-submissions/${row.id}?technician_id=${row.submission_technician_id}`) });
-  if (details.isPending) return <p>Loading submission...</p>;
+  if (details.isPending) return <LoadingState message="Loading submission…"/>;
   if (details.error) return <p role="alert">{details.error.message}</p>;
   if (!details.data?.submission) return <p>This technician has not saved a form yet.</p>;
   return <dl className="grid gap-4 sm:grid-cols-2">{Object.entries(details.data.submission)

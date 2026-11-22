@@ -1,4 +1,5 @@
 'use client';
+import {LoadingState} from '@/components/portal/components/LoadingState';
 import {displayControllerDate,recordMonth,type SyncColumn} from '@/lib/services/google-sheets/sync-model';
 import {useRef,useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
@@ -21,7 +22,7 @@ export default function AssuranceSpreadsheet({projectId,userId,serviceAssurance=
  const records=useQuery({queryKey:serviceAssurance?[base,userId,projectId]:['assurance-tickets',userId,projectId],queryFn:()=>api<Ticket[]>(`${base}?project_id=${projectId}`)});
  const drafts=useQuery({queryKey:serviceAssurance?[base,'grid-drafts',userId,projectId]:['delivery-grid-drafts',userId,projectId],queryFn:()=>api<ServerDraft[]>(`${base}/grid?project_id=${projectId}`)});
  const [refreshKey,setRefreshKey]=useState(0);
- if(meta.isPending||records.isPending||drafts.isPending)return <p>Loading {serviceAssurance?'Service Assurance':'Service Delivery'}...</p>;
+ if(meta.isPending||records.isPending||drafts.isPending)return <LoadingState message={'Loading '+(serviceAssurance?'Service Assurance':'Service Delivery')+"…"}/>;
  if(meta.error||records.error||drafts.error)return <p role="alert">{meta.error?.message||records.error?.message||drafts.error?.message}</p>;
  return <DeliveryGrid key={`${projectId}:${userId}:${refreshKey}`} projectId={projectId} userId={userId} serviceAssurance={serviceAssurance} month={month} fields={columns?.length?columns.filter(c=>c.active).map(c=>({...meta.data!.fields.find(f=>f.key===c.key),key:c.key,label:c.label,excelColumn:String(c.index+1),storage:c.key,type:meta.data!.fields.find(f=>f.key===c.key)?.type||'text'})):meta.data!.fields} technicians={meta.data!.technicians} tickets={records.data!.filter(t=>!month||recordMonth(String(t.date||''))===month)} drafts={drafts.data!} refresh={async()=>{await Promise.all([records.refetch(),drafts.refetch()]);setRefreshKey(v=>v+1);}}/>;
 }

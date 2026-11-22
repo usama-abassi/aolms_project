@@ -1,4 +1,5 @@
 'use client';
+import {LoadingState} from '@/components/portal/components/LoadingState';
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
@@ -146,7 +147,7 @@ const Dashboard: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                 {isActivityLoading ? (
-                  <tr><td colSpan={3} className="px-4 py-8 text-center text-neutral-500 dark:text-neutral-400">Loading...</td></tr>
+                  <tr><td colSpan={3}><LoadingState message="Loading recent activity…"/></td></tr>
                 ) : recentActivity?.length ? (
                   recentActivity.map((activity) => (
                     <tr key={activity.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
