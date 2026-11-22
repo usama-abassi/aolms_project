@@ -42,5 +42,13 @@ describe('Service Delivery backend authorization and concurrency',()=>{
   expect(args[4]).toBeNull();
   expect(JSON.parse(args[7]).delivery.technician_id).toBe('Habib');
  });
+ it('preserves optional Appointment text on Sheet imports',async()=>{
+  const {service,query}=setup(null);
+  const body={id,project_id:id,mutation_id:mutation,base_version:null,values:{work_date:'2026-10-14',ticket_number:'123',actioned:'Delivered',appointment:'To be confirmed'}};
+  await service.saveOrder(body,manager,{sheetImport:true});
+  const args=query.mock.calls.find(([sql])=>sql.startsWith('INSERT INTO assurance_tickets'))![1]!;
+  expect(JSON.parse(args[7]).delivery.appointment).toBe('To be confirmed');
+  await expect(service.saveOrder(body,manager)).rejects.toThrow('Invalid Appointment');
+ });
  it('validates the Team against the database',async()=>{const {service,query}=setup();query.mockImplementation(async(sql:string)=>sql.includes('SELECT id FROM projects')?[{id}]:[]);const rowValues=Object.fromEntries(controllerFields.map(f=>[f.key,'']));Object.assign(rowValues,{work_date:'2026-10-14',ticket_number:'123',actioned:'Delivered',technician_id:tech});await expect(service.saveOrder({id,project_id:id,mutation_id:mutation,base_version:null,values:rowValues},manager)).rejects.toThrow('active Technician');});
 });

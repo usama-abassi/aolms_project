@@ -15,13 +15,19 @@ export class ServiceDelivery {
   const keys=(await dynamicKeys(this.db,project,body.values?.work_date)).filter(key=>Object.hasOwn(body.values||{},key));
   const values=this.validate(body.values,[...controllerFields,...keys.map(key=>({key,label:key,type:'text'}))]);
   if(!values.work_date||!values.ticket_number||!values.actioned)throw new BadRequestException('Date, Order and Actioned are required');
-  for(const f of controllerFields)if(values[f.key]&&['date','datetime-local'].includes(f.type)){const date=gridDate(values[f.key],f.type==='datetime-local');if(!date)throw new BadRequestException(`Invalid ${f.label}`);values[f.key]=date;}
   return this.db.transaction(async tx=>{
    await tx.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[id]);
    const [p]=await tx.query("SELECT id FROM projects WHERE id=$1 AND code='SERVICE_ASSURANCE'",[project]);if(!p)throw new BadRequestException('Select Service Delivery');
    const [old]=await tx.query('SELECT * FROM assurance_tickets WHERE id=$1 FOR UPDATE',[id]);
    if(old?.last_mutation_id===mutation)return old;
    if(old&&(old.project_id!==project||old.version!==body.base_version)||!old&&body.base_version!=null)throw new ConflictException('Order changed. Refresh and review your retained draft.');
+   for(const f of controllerFields){
+    if(!values[f.key]||!['date','datetime-local'].includes(f.type))continue;
+    const date=gridDate(values[f.key],f.type==='datetime-local');
+    if(date)values[f.key]=date;
+    // Optional sheet dates live in JSON; preserve unfamiliar formats and notes as entered.
+    else if(f.key==='work_date'||(!sheetImport&&old?.spreadsheet_fields?.delivery?.[f.key]!==values[f.key]))throw new BadRequestException(`Invalid ${f.label}`);
+   }
    let technicianId:string|null=null;
    if(values.technician_id){
     const team=values.technician_id;

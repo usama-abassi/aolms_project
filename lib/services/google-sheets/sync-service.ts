@@ -61,6 +61,7 @@ export class SheetSyncService{
   const normalize=(values:Values)=>{
    if(identifier&&identifier.key!=='ticket_number')values.ticket_number=values[identifier.key];
    if(values[dateKey])values[dateKey]=controllerDate(values[dateKey],c.month_key)||values[dateKey];
+   if(delivery&&values.appointment)values.appointment=controllerDate(values.appointment,c.month_key)||values.appointment;
    const team=values[teamKey]?.trim();
    if(!team)return;
    const byId=technicians.find(t=>t.id===team.toLowerCase());
