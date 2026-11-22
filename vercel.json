@@ -1,1 +1,1 @@
-{"crons":[{"path":"/api/cron/sheets","schedule":"0 * * * *"}]}
+{"fluid":true}

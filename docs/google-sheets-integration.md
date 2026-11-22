@@ -8,7 +8,7 @@
    - `database/migrations/20261031_controller_realtime.sql`
    - `database/migrations/20261101_google_oauth.sql`
 2. Set up Google OAuth as described below and a strong server-only `CRON_SECRET`. The legacy service-account environment variables remain optional for installations that have never connected a personal account.
-3. Deploy the Next.js application. `vercel.json` registers an hourly job at minute zero. Hosting must support hourly cron and the configured 300-second function duration. For another host, schedule authenticated `GET /api/cron/sheets` hourly with `Authorization: Bearer <CRON_SECRET>`. Do not use an in-process interval in serverless hosting.
+3. Deploy the Next.js application. In cron-job.org, schedule `GET https://YOUR_APP_HOST/api/cron/sheets` using `0 * * * *`. Set the custom header `Authorization` to `Bearer <CRON_SECRET>` using the same secret configured in Vercel. A `202 Accepted` response confirms the trigger was accepted. Check Controller → Configuration for the sync result. Next.js runs the sync after responding, within the function's 300-second limit. Vercel Fluid Compute is enabled in `vercel.json`.
 4. Open Controller → Configuration, select a project/month, paste the Google Sheets URL, and enter the exact tab title. Save verifies spreadsheet access and tab existence. Use Sync now for the first import; inspect status/errors before enabling unattended use.
 5. In Projects, choose a configured monthly sheet view to see its current columns. All-record view retains the existing project's columns. Column metadata refreshes every 30 seconds; saved records stream through Supabase Realtime. Database Realtime publication and RLS changes are required for that stream.
 
