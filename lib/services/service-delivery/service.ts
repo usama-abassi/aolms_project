@@ -90,7 +90,7 @@ export class ServiceDelivery {
   managerOnly(actor);
   return this.db.transaction(async tx=>{
    await tx.query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY');
-   const records=await new ServiceDelivery(tx).list(project,actor);
+   const records=(await new ServiceDelivery(tx).list(project,actor)).filter(t=>norm(t.spreadsheet_fields?.delivery?.actioned)==='delivered');
    const submissions=await tx.query('SELECT s.* FROM assurance_submissions s JOIN assurance_tickets t ON t.id=s.ticket_id WHERE t.project_id=$1 ORDER BY s.submitted_at DESC NULLS LAST,s.id',[project]);
    const serials=records.map(t=>norm(orderValues(t).nce_sn)).filter(Boolean);
    const inventory=await tx.query(`SELECT serial_number,po_number,item_code,model FROM ont_inventory WHERE lower(trim(serial_number))=ANY($1::text[]) UNION ALL SELECT data->>'serial_number',data->>'po_number',data->>'item_code',data->>'model' FROM equipment_records WHERE kind='ont' AND lower(trim(data->>'serial_number'))=ANY($1::text[])`,[serials]);

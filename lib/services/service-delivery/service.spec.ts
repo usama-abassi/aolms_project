@@ -61,3 +61,13 @@ describe('Service Delivery backend authorization and concurrency',()=>{
  });
  it('validates the Team against the database',async()=>{const {service,query}=setup();query.mockImplementation(async(sql:string)=>sql.includes('SELECT id FROM projects')?[{id}]:[]);const rowValues=Object.fromEntries(controllerFields.map(f=>[f.key,'']));Object.assign(rowValues,{work_date:'2026-10-14',ticket_number:'123',actioned:'Delivered',technician_id:tech});await expect(service.saveOrder({id,project_id:id,mutation_id:mutation,base_version:null,values:rowValues},manager)).rejects.toThrow('active Technician');});
 });
+
+it('includes only explicitly Delivered orders in the Service Delivery audit',async()=>{
+ const {service,query}=setup();
+ query.mockImplementation(async(sql:string)=>sql.includes('FROM assurance_tickets t LEFT JOIN')?[
+  ticket,
+  {...ticket,id:mutation,spreadsheet_fields:{delivery:{actioned:'Rejected'}}},
+  {...ticket,id:tech,spreadsheet_fields:{}}
+ ]:[]);
+ expect((await service.audit(id,manager)).map(row=>row.id)).toEqual([id]);
+});
