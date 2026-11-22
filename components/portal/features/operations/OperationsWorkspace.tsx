@@ -1,3 +1,4 @@
+'use client';
 import LegacyOperationsWorkspace from '../../legacy-aolms/LegacyOperationsWorkspace.jsx';
 
 type Role = 'admin' | 'controller';

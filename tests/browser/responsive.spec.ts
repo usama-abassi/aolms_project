@@ -365,3 +365,35 @@ test('Delivery grid shows one save status and contains wide cells on mobile',asy
  await expect(section.getByText('Type to replace a cell.',{exact:false})).toBeVisible();
  await noOverflow(page);
 });
+
+test('slow access keeps the shell visible and reuses permission across routes',async({page})=>{
+ await fixtures(page,'controller','light');
+ let checks=0,release!:()=>void;
+ const permissionReady=new Promise<void>(resolve=>{release=resolve;});
+ await page.route(url=>url.pathname==='/rest/v1/profiles'&&url.searchParams.get('select')==='role,is_active',async route=>{
+  checks++;await permissionReady;
+  await route.fulfill({json:{role:'controller',is_active:true},headers:{'access-control-allow-origin':'*'}});
+ });
+ await page.goto('/controller/configuration');
+ const main=page.getByRole('main');
+ try {
+  await expect(page.getByRole('navigation',{name:'Main navigation'})).toBeVisible();
+  await expect(main.locator('[data-page-skeleton]')).toBeVisible();
+  await expect(page.getByText(/checking access/i)).toHaveCount(0);
+  await expect(main.getByRole('heading',{name:'Configuration'})).toHaveCount(0);
+ } finally { release(); }
+ await expect(main.locator('[data-page-skeleton]')).toHaveCount(0);
+ await page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name:'Inventory'}).click();
+ await expect(page).toHaveURL(/controller\/inventory/);
+ await expect(main.getByRole('heading',{name:'Inventory'})).toBeVisible();
+ expect(checks).toBe(1);
+});
+
+test('a valid session cannot mount a page for a different role',async({page})=>{
+ await fixtures(page,'technician','light');
+ let requests=0;
+ await page.route('**/api/profiles',route=>{requests++;return route.fulfill({json:[]});});
+ await page.goto('/admin/profiles');
+ await expect(page).toHaveURL(/\/login$/);
+ expect(requests).toBe(0);
+});

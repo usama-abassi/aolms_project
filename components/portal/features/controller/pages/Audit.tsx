@@ -1,12 +1,14 @@
 'use client';
+import dynamic from 'next/dynamic';
+import {RouteSkeleton} from '@/components/portal/components/PageSkeleton';
 import {LoadingState} from '@/components/portal/components/LoadingState';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {useSearchParams,useRouter,usePathname} from 'next/navigation';
 import { api } from '../../assurance/api';
 import { Button } from '../../../components/Button';
-import ServiceDeliveryAudit from '../components/ServiceDeliveryAudit';
-import ServiceAssuranceAudit from '../components/ServiceAssuranceAudit';
+const ServiceDeliveryAudit=dynamic(()=>import('../components/ServiceDeliveryAudit'),{loading:RouteSkeleton});
+const ServiceAssuranceAudit=dynamic(()=>import('../components/ServiceAssuranceAudit'),{loading:RouteSkeleton});
 import { Table, type Column } from '../../../components/Table';
 
 type Project={id:string;name:string;code:string};

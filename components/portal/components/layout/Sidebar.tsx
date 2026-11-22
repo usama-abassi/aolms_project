@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import {usePathname} from 'next/navigation';
+import {usePathname,useRouter} from 'next/navigation';
+import {warmRoute} from '../../auth/route-warmup';
 import { cn } from '../../lib/utils';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -13,6 +14,8 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse, navItems }) => {
   const pathname = usePathname();
+  const router = useRouter();
+  const prefetch = (path:string) => { if (pathname !== path) { router.prefetch(path); warmRoute(path); } };
   const [isMobile, setIsMobile] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -89,6 +92,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse,
             <Link
               key={item.path}
               href={item.path}
+              onMouseEnter={() => prefetch(item.path)}
+              onFocus={() => prefetch(item.path)}
               onClick={() => { setFocused(false); if (isMobile && !isCollapsed) onToggleCollapse(); }}
               aria-label={item.label}
               title={!expanded ? item.label : undefined}

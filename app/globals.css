@@ -88,3 +88,16 @@ pre { overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+
+/* Sweep the highlight without moving or resizing the placeholder. */
+.skeleton-shimmer { position: relative; overflow: hidden; }
+.skeleton-shimmer::after {
+  position: absolute; inset: 0; content: '';
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.35), transparent);
+  transform: translateX(-100%);
+  animation: aolms-shimmer 1.65s ease-in-out infinite;
+}
+.dark .skeleton-shimmer::after { opacity: 0.4; }
+@keyframes aolms-shimmer { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .skeleton-shimmer::after { animation: none; } }

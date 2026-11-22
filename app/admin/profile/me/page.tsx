@@ -1,2 +1,5 @@
-import Screen from '@/components/portal/features/admin/pages/Profile';
+'use client';
+import dynamic from 'next/dynamic';
+import {RouteSkeleton} from '@/components/portal/components/PageSkeleton';
+const Screen=dynamic(()=>import('@/components/portal/features/admin/pages/Profile'),{loading:RouteSkeleton});
 export default function Page(){return <Screen />;}

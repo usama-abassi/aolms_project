@@ -1,5 +1,5 @@
 'use client';
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, startTransition, useContext, useState, useEffect } from 'react';
 
 type Theme = 'light' | 'dark';
 
@@ -17,8 +17,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [ready,setReady]=useState(false);
   useEffect(()=>{
     let saved:string|null=null;try{saved=localStorage.getItem('theme');}catch{}
-    setThemeState(saved==='light'||saved==='dark'?saved:'light');
-    setReady(true);
+    // Let the visible shell hydrate before updating consumers inside the route boundary.
+    startTransition(()=>{
+      setThemeState(saved==='light'||saved==='dark'?saved:'light');
+      setReady(true);
+    });
   },[]);
 
   const setTheme = (newTheme: Theme) => {

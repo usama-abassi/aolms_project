@@ -2,10 +2,12 @@
 import {LoadingState} from '@/components/portal/components/LoadingState';
 import {useQuery} from '@tanstack/react-query'
 import {api} from '@/components/portal/features/assurance/api'
-import ServiceAssuranceAudit from '@/components/portal/features/controller/components/ServiceAssuranceAudit'
+import dynamic from 'next/dynamic'
+import {RouteSkeleton} from '@/components/portal/components/PageSkeleton'
+const ServiceAssuranceAudit=dynamic(()=>import('@/components/portal/features/controller/components/ServiceAssuranceAudit'),{loading:RouteSkeleton})
 
 export default function Audit(){
- const projects=useQuery({queryKey:['admin-assurance-projects'],queryFn:()=>api<Array<{id:string;code:string}>>('/projects')})
+ const projects=useQuery({queryKey:['admin-assurance-projects'],staleTime:30_000,queryFn:()=>api<Array<{id:string;code:string}>>('/projects')})
  if(projects.isPending)return <LoadingState message="Loading audit…"/>
  if(projects.error)return <p role="alert">{projects.error.message}</p>
  const project=projects.data?.find(p=>p.code==='SERVICE_DELIVERY')

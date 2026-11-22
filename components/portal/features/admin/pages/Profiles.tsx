@@ -74,6 +74,7 @@ const Profiles: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
+      void queryClient.resetQueries({queryKey:['route-access']});
       setIsModalOpen(false);
       setSelectedProfile(null);
       setPassword('');

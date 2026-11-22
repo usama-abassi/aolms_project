@@ -5,7 +5,10 @@ import { useStaff } from '../hooks/useStaff';
 import Header from '../components/layout/Header';
 import SearchBar from '../components/ui/SearchBar';
 import StatsCard from '../components/ui/StatsCard';
-import ExpiryPieChart from '../components/ui/ExpiryPieChart';
+import dynamic from 'next/dynamic';
+import {DeferredSection} from '../../components/DeferredSection';
+import {ChartSkeleton} from '../../components/Skeleton';
+const ExpiryPieChart = dynamic(()=>import('../components/ui/ExpiryPieChart'),{loading:ChartSkeleton});
 import StaffFilters from '../components/staff/StaffFilters';
 import StaffTable from '../components/staff/StaffTable';
 
@@ -116,11 +119,11 @@ export default function StaffDashboard() {
       {/* Document Expiry Pie Chart */}
       {stats?.documentExpiry && (
         <div className="mb-8">
-          <ExpiryPieChart 
+          <DeferredSection fallback={<ChartSkeleton/>}><ExpiryPieChart
             data={stats.documentExpiry} 
             onArcClick={handleArcClick}
             activeFilter={filters.docExpiry}
-          />
+          /></DeferredSection>
         </div>
       )}
 

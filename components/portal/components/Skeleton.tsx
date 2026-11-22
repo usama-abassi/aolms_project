@@ -17,7 +17,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   className = '',
   ...props
 }) => {
-  const baseStyles = 'animate-pulse bg-neutral-200 dark:bg-neutral-700 rounded';
+  const baseStyles = 'skeleton-shimmer bg-neutral-200 dark:bg-neutral-700 rounded';
 
   const variantStyles = {
     text: 'h-4 w-full',
@@ -55,7 +55,7 @@ export const TableSkeleton: React.FC<{ columns: number; rows?: number }> = ({
   columns = 5,
   rows = 5,
 }) => (
-  <div className="animate-pulse">
+  <div className="rounded-lg border border-neutral-200 dark:border-neutral-700">
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
         <thead>
@@ -84,7 +84,7 @@ export const TableSkeleton: React.FC<{ columns: number; rows?: number }> = ({
 );
 
 export const CardSkeleton: React.FC = () => (
-  <div className="animate-pulse space-y-4 p-6 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl">
+  <div className="space-y-4 p-6 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl">
     <Skeleton variant="text" width="40%" height="24px" />
     <Skeleton variant="text" width="100%" height="16px" />
     <Skeleton variant="text" width="60%" height="16px" />
@@ -96,7 +96,7 @@ export const CardSkeleton: React.FC = () => (
 );
 
 export const FormSkeleton: React.FC<{ fields?: number }> = ({ fields = 4 }) => (
-  <div className="animate-pulse space-y-6">
+  <div className="space-y-6">
     {Array.from({ length: fields }).map((_, i) => (
       <div key={i} className="space-y-2">
         <Skeleton variant="text" width="30%" height="20px" />
@@ -107,7 +107,7 @@ export const FormSkeleton: React.FC<{ fields?: number }> = ({ fields = 4 }) => (
 );
 
 export const ListSkeleton: React.FC<{ items?: number }> = ({ items = 5 }) => (
-  <div className="animate-pulse space-y-3">
+  <div className="space-y-3">
     {Array.from({ length: items }).map((_, i) => (
       <div key={i} className="flex items-center gap-4 p-4 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-lg">
         <Skeleton variant="circular" width="48px" height="48px" />
@@ -122,7 +122,7 @@ export const ListSkeleton: React.FC<{ items?: number }> = ({ items = 5 }) => (
 );
 
 export const DashboardSkeleton: React.FC = () => (
-  <div className="animate-pulse space-y-6">
+  <div className="space-y-6">
     <div className="flex items-center justify-between">
       <Skeleton variant="text" width="30%" height="30px" />
       <Skeleton variant="rectangular" width="150px" height="40px" />
@@ -132,5 +132,12 @@ export const DashboardSkeleton: React.FC = () => (
         <CardSkeleton key={i} />
       ))}
     </div>
+  </div>
+);
+
+export const ChartSkeleton = ({height=280}:{height?:number}) => (
+  <div className="rounded-xl border border-neutral-200 p-5 dark:border-neutral-700">
+    <Skeleton width="40%" height={20} />
+    <div className="mt-5 flex items-end gap-3" style={{height}}>{[45,66,51,78,60,86,70].map((h,i)=><Skeleton key={i} variant="rectangular" className="flex-1" height={h+'%'}/>)}</div>
   </div>
 );

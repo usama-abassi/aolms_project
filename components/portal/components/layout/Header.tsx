@@ -87,11 +87,8 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={toggleTheme}
             aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
           >
-            {theme === 'light' ? (
-              <Moon className="w-5 h-5 text-neutral-600" aria-hidden="true" />
-            ) : (
-              <Sun className="w-5 h-5 text-yellow-400" aria-hidden="true" />
-            )}
+            <Moon className="w-5 h-5 text-neutral-600 dark:hidden" aria-hidden="true" />
+            <Sun className="hidden w-5 h-5 text-yellow-400 dark:block" aria-hidden="true" />
           </Button>
 
           {/* User menu */}

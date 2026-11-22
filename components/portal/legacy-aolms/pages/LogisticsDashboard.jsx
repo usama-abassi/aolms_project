@@ -2,7 +2,10 @@
 import { useState,useEffect } from 'react';
 import LogisticsTable from '../components/logistics/LogisticsTable';
 import OntCheckTable from '../components/logistics/OntCheckTable';
-import LogisticsPieChart from '../components/logistics/LogisticsPieChart';
+import dynamic from 'next/dynamic';
+import {DeferredSection} from '../../components/DeferredSection';
+import {ChartSkeleton} from '../../components/Skeleton';
+const LogisticsPieChart = dynamic(()=>import('../components/logistics/LogisticsPieChart'),{loading:ChartSkeleton});
 import { api } from '../../features/assurance/api';
 export default function LogisticsDashboard(){
  const [data,setData]=useState([]),[dates,setDates]=useState([]),[date,setDate]=useState(''),[loading,setLoading]=useState(true),[error,setError]=useState(''),[ont,setOnt]=useState(null),[tab,setTab]=useState('logistics');
@@ -19,7 +22,7 @@ export default function LogisticsDashboard(){
   <div className="flex flex-wrap gap-3"><label>Work date<select className="block rounded-lg border p-3" value={date} onChange={e=>load(e.target.value)}>{dates.map(d=><option key={d}>{d}</option>)}</select></label><button className="task-action" onClick={()=>setTab('logistics')}>Logistics</button><button className="task-action" onClick={()=>{setTab('ont');void check()}}>ONT Check</button></div>
   {tab==='logistics'?<>
    <div className="flex flex-wrap gap-3"><button className="task-action" onClick={()=>setFilter('')}>Tickets: {data.length}</button><button className="task-action" onClick={()=>setFilter('resolved')}>Resolved: {data.filter(resolved).length}</button><button className="task-action" onClick={()=>setFilter('remotelyResolved')}>Remotely resolved: {data.filter(remote).length}</button><button className="task-action" onClick={()=>setFilter('missing')}>Missing responses: {data.filter(r=>!r.isMatch).length}</button></div>
-   {!!data.length&&<LogisticsPieChart data={data} activeFilter={filter} onSegmentClick={key=>setFilter(filter===key?'':key)}/>}
+   {!!data.length&&<DeferredSection fallback={<ChartSkeleton/>}><LogisticsPieChart data={data} activeFilter={filter} onSegmentClick={key=>setFilter(filter===key?'':key)}/></DeferredSection>}
    <LogisticsTable data={visible} loading={loading} hasComparison/>
   </>:<OntCheckTable data={ont} loading={loading} onCheckClick={check}/>}
  </div>;

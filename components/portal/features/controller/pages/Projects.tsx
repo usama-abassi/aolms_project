@@ -1,18 +1,20 @@
 'use client';
+import dynamic from 'next/dynamic';
+import {RouteSkeleton} from '@/components/portal/components/PageSkeleton';
 import {LoadingState} from '@/components/portal/components/LoadingState';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {useSearchParams,useRouter,usePathname} from 'next/navigation';
 import { api, currentUserId } from '../../assurance/api';
-import DeliverySpreadsheet from '../components/DeliverySpreadsheet';
-import AssuranceSpreadsheet from '../components/AssuranceSpreadsheet';
+const DeliverySpreadsheet=dynamic(()=>import('../components/DeliverySpreadsheet'),{loading:RouteSkeleton});
+const AssuranceSpreadsheet=dynamic(()=>import('../components/AssuranceSpreadsheet'),{loading:RouteSkeleton});
 import {type SyncColumn} from '@/lib/services/google-sheets/sync-model';
 import { Card } from '../../../components/Card';
 
 export default function ControllerProjects(){
  const params=useSearchParams();const router=useRouter();const pathname=usePathname();const setParams=(values:Record<string,string>)=>router.push(pathname+'?'+new URLSearchParams(values));
  const [error,setError]=useState('');
- const projects=useQuery({queryKey:['controller-projects'],queryFn:()=>api<Array<{id:string;name:string;code:string;is_active:boolean}>>('/projects'),refetchInterval:30000});
+ const projects=useQuery({queryKey:['controller-projects'],staleTime:30_000,queryFn:()=>api<Array<{id:string;name:string;code:string;is_active:boolean}>>('/projects'),refetchInterval:30000});
  const configs=useQuery({queryKey:['sheet-configurations'],queryFn:()=>api<Array<{project_id:string;month_key:string;columns:SyncColumn[]}>>('/sheet-configurations'),refetchInterval:30000});
  const user=useQuery({queryKey:['session-user-id'],queryFn:currentUserId});
  const list=projects.data||[];

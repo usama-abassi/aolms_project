@@ -1,0 +1,56 @@
+# Page transition verification
+
+1. Run `npm run build` and `npm start`. Sign in and open DevTools → Network. Select Slow 3G (or a high-latency preset) and enable Disable cache. Hard reload a protected route to exercise the initial access check. The sidebar and header should stay visible. The content skeleton should appear after about 180 ms and remain for about 300 ms once shown. There should be no visible access-check message.
+2. Switch between pages in the same role within one minute. Confirm the role/profile request is reused in the Network panel and that returning to a prefetched route does not flash a skeleton. Turn on reduced motion in DevTools Rendering and verify the skeleton stays still. Sign out or open a route for a different role to verify protected content does not mount.
+3. To compare bundle weight, build the previous and new commits using the same Node version, dependencies, and environment. On separate cold loads of the same route, filter the DevTools Network panel to JS and record the transferred total after the page settles, before hovering links or scrolling. Repeat after opening a grid or scrolling a chart into view. Compare initial and deferred JS separately; do not compare the entire `.next` directory, which also contains server and deferred artifacts.
+
+API authorization is unchanged. The client permission result is revalidated periodically and reset after supported auth/profile changes. Route code and the selected project-list reads can start before the initial guard resolves; other reads wait for their page and any required IDs. The only portal image is the above-the-fold login brand, so its existing Next Image priority was kept.
+
+## Files changed
+
+- `app/admin/audit/page.tsx` (modified)
+- `app/admin/dashboard/page.tsx` (modified)
+- `app/admin/layout.tsx` (modified)
+- `app/admin/legacy-operations/page.tsx` (modified)
+- `app/admin/operations-data/page.tsx` (modified)
+- `app/admin/profile/me/page.tsx` (modified)
+- `app/admin/profiles/page.tsx` (modified)
+- `app/admin/projects/page.tsx` (modified)
+- `app/controller/audit/page.tsx` (modified)
+- `app/controller/configuration/page.tsx` (modified)
+- `app/controller/cpe-db/page.tsx` (modified)
+- `app/controller/inventory/page.tsx` (modified)
+- `app/controller/layout.tsx` (modified)
+- `app/controller/legacy-operations/page.tsx` (modified)
+- `app/controller/ont-db/page.tsx` (modified)
+- `app/controller/projects/page.tsx` (modified)
+- `app/globals.css` (modified)
+- `app/layout.tsx` (modified)
+- `app/loading.tsx` (modified)
+- `app/login/page.tsx` (modified)
+- `app/providers.tsx` (modified)
+- `app/technician/assurance-form/[ticketId]/page.tsx` (modified)
+- `app/technician/delivery-form/[orderId]/page.tsx` (modified)
+- `app/technician/layout.tsx` (modified)
+- `app/technician/projects/page.tsx` (modified)
+- `app/technician/submitted/page.tsx` (modified)
+- `app/technician/todo/page.tsx` (modified)
+- `components/portal/app/theme/theme-context.tsx` (modified)
+- `components/portal/auth/components/ProtectedRoute.tsx` (modified)
+- `components/portal/components/LoadingState.tsx` (modified)
+- `components/portal/components/Skeleton.tsx` (modified)
+- `components/portal/components/Table.tsx` (modified)
+- `components/portal/components/layout/Header.tsx` (modified)
+- `components/portal/components/layout/Sidebar.tsx` (modified)
+- `components/portal/features/admin/pages/Profiles.tsx` (modified)
+- `components/portal/features/controller/pages/Audit.tsx` (modified)
+- `components/portal/features/controller/pages/Inventory.tsx` (modified)
+- `components/portal/features/controller/pages/Projects.tsx` (modified)
+- `components/portal/features/operations/OperationsWorkspace.tsx` (modified)
+- `components/portal/legacy-aolms/pages/LogisticsDashboard.jsx` (modified)
+- `components/portal/legacy-aolms/pages/StaffDashboard.jsx` (modified)
+- `tests/browser/responsive.spec.ts` (modified)
+- `components/portal/auth/route-warmup.ts` (created)
+- `components/portal/components/DeferredSection.tsx` (created)
+- `components/portal/components/PageSkeleton.tsx` (created)
+- `docs/page-transition-ux.md` (created)

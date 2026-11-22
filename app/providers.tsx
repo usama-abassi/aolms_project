@@ -7,8 +7,8 @@ export function Providers({children}:{children:React.ReactNode}){
  const [client]=useState(()=>new QueryClient());
  useEffect(()=>{
   let previous:string|null|undefined;
-  const subscription=supabase?.auth.onAuthStateChange((_event,session)=>{
-   const id=session?.user.id??null;if(previous!==undefined&&previous!==id)client.clear();previous=id;
+  const subscription=supabase?.auth.onAuthStateChange((event,session)=>{
+   const id=session?.user.id??null;if(event==='SIGNED_OUT'||previous!==undefined&&previous!==id)client.clear();else if(event==='USER_UPDATED')void client.resetQueries({queryKey:['route-access']});previous=id;
   });
   return ()=>subscription?.data.subscription.unsubscribe();
  },[client]);

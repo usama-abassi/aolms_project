@@ -3,13 +3,15 @@ import {LoadingState} from '@/components/portal/components/LoadingState';
 import {useState} from 'react'
 import {useQuery} from '@tanstack/react-query'
 import {api,currentUserId} from '@/components/portal/features/assurance/api'
-import ServiceAssuranceTasks from '@/components/portal/features/technician/components/ServiceAssuranceTasks'
+import dynamic from 'next/dynamic'
+import {RouteSkeleton} from '@/components/portal/components/PageSkeleton'
+const ServiceAssuranceTasks=dynamic(()=>import('@/components/portal/features/technician/components/ServiceAssuranceTasks'),{loading:RouteSkeleton})
 import {Button} from '@/components/portal/components/Button'
 
 export default function Projects(){
  const [todo,setTodo]=useState(true)
  const user=useQuery({queryKey:['session-user-id'],queryFn:currentUserId})
- const projects=useQuery({queryKey:['technician-projects'],queryFn:()=>api<Array<{id:string;code:string;name:string}>>('/projects')})
+ const projects=useQuery({queryKey:['technician-projects'],staleTime:30_000,queryFn:()=>api<Array<{id:string;code:string;name:string}>>('/projects')})
  if(user.isPending||projects.isPending)return <LoadingState message="Loading projects…"/>
  if(user.error||projects.error)return <p role="alert">{user.error?.message||projects.error?.message}</p>
  const project=projects.data?.find(p=>p.code==='SERVICE_DELIVERY')

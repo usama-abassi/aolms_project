@@ -1,5 +1,5 @@
 'use client';
-import {LoadingState} from '@/components/portal/components/LoadingState';
+import {TableSkeleton} from './Skeleton';
 import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '../lib/utils';
 import { ChevronUp, ChevronDown } from 'lucide-react';
@@ -79,34 +79,7 @@ export function Table<T extends Record<string, any> = any>({
   };
 
   if (isLoading) {
-    return (
-      <div className="space-y-2">
-        <LoadingState message="Loading records…"/>
-        <div aria-hidden="true" className="motion-safe:animate-pulse space-y-2">
-        <div className="h-10 bg-neutral-100 dark:bg-neutral-800 rounded-md" />
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead>
-              <tr>
-                {columns.map((col) => (
-                  <th key={col.key} className="px-4 py-3 bg-neutral-50 dark:bg-neutral-900 text-table-header" />
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i}>
-                  {columns.map((col) => (
-                    <td key={col.key} className="px-4 py-4 h-10 bg-neutral-50 dark:bg-neutral-900" />
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        </div>
-      </div>
-    );
+    return <div role="status" aria-label="Loading records"><div aria-hidden="true"><TableSkeleton columns={columns.length}/></div></div>;
   }
 
   if (data.length === 0) {

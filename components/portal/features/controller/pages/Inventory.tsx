@@ -21,7 +21,7 @@ const today=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMon
 export default function Inventory(){
  const params=useSearchParams(),router=useRouter(),path=usePathname();
  const [historyOpen,setHistoryOpen]=useState(false);
- const projects=useQuery({queryKey:['controller-projects'],queryFn:()=>api<Project[]>('/projects')});
+ const projects=useQuery({queryKey:['controller-projects'],staleTime:30_000,queryFn:()=>api<Project[]>('/projects')});
  const list=projects.data||[];
  const project=list.find(p=>p.id===params.get('project'))||list.find(p=>p.code==='SERVICE_ASSURANCE')||list[0];
  return <div className="space-y-5"><div><h1 className="text-h2 font-semibold">Inventory</h1><p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">Monthly material stock by project</p></div>

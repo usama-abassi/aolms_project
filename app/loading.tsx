@@ -1,2 +1,2 @@
-import {LoadingState} from '@/components/portal/components/LoadingState';
-export default function Loading(){return <LoadingState message="Loading page…"/>;}
+import {RouteSkeleton} from '@/components/portal/components/PageSkeleton';
+export default function Loading(){return <RouteSkeleton/>;}
