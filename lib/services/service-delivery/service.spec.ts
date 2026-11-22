@@ -34,5 +34,13 @@ describe('Service Delivery backend authorization and concurrency',()=>{
  it('allows administrative corrections after the editing window and logs previous/current values',async()=>{const old={id,version:1,submitted_at:'2020-01-01',response_order_type:'Old',delivery_fields:{E:'Old',H:'2'}};const {service,query}=setup(ticket,old);await service.correct(id,{source:'technician',field:'order_type',previous:'Old',value:'New',submission_id:id},manager);const update=query.mock.calls.find(([sql])=>sql.startsWith('UPDATE assurance_submissions'));expect(update?.[0]).not.toContain('submitted_at=');expect(JSON.parse(update![1]![1]).H).toBe('2');const log=query.mock.calls.find(([sql])=>sql.startsWith('INSERT INTO audit_logs'));expect(JSON.parse(log![1]![4]).value).toBe('Old');expect(JSON.parse(log![1]![5]).value).toBe('New');});
  it('rejects a correction based on an obsolete current value',async()=>{await expect(setup().service.correct(id,{source:'controller',field:'order_type',previous:'Old',value:'External'},manager)).rejects.toThrow('Value changed');});
  it('preserves unrelated Controller fields during a correction',async()=>{const {service,query}=setup();await service.correct(id,{source:'controller',field:'order_type',previous:'New',value:'External'},manager);const update=query.mock.calls.find(([sql])=>sql.startsWith('UPDATE assurance_tickets'));expect(JSON.parse(update![1]![1])).toMatchObject({unrelated:'preserve',delivery:{connection_type:'Home Connect',order_type:'External'}});});
+ it('stores unmatched imported Team text without assigning a technician',async()=>{
+  const {service,query}=setup();
+  query.mockImplementation(async(sql:string)=>sql.includes('SELECT id FROM projects')?[{id}]:sql.startsWith('INSERT INTO assurance_tickets')?[{id}]:[]);
+  await service.saveOrder({id,project_id:id,mutation_id:mutation,base_version:null,values:{work_date:'2026-10-14',ticket_number:'123',actioned:'Delivered',technician_id:'Habib'}},manager,{sheetImport:true});
+  const args=query.mock.calls.find(([sql])=>sql.startsWith('INSERT INTO assurance_tickets'))![1]!;
+  expect(args[4]).toBeNull();
+  expect(JSON.parse(args[7]).delivery.technician_id).toBe('Habib');
+ });
  it('validates the Team against the database',async()=>{const {service,query}=setup();query.mockImplementation(async(sql:string)=>sql.includes('SELECT id FROM projects')?[{id}]:[]);const rowValues=Object.fromEntries(controllerFields.map(f=>[f.key,'']));Object.assign(rowValues,{work_date:'2026-10-14',ticket_number:'123',actioned:'Delivered',technician_id:tech});await expect(service.saveOrder({id,project_id:id,mutation_id:mutation,base_version:null,values:rowValues},manager)).rejects.toThrow('active Technician');});
 });

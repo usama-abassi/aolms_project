@@ -57,11 +57,15 @@ export class SheetSyncService{
   if(!sheet.columns.some(x=>x.key===dateKey)&&!snapshots.length)throw new BadRequestException('Initial import requires the controller Date column for monthly routing');
   const technicians=await db.query("SELECT id,full_name FROM profiles WHERE role='technician' AND is_active");
   const teamKey=delivery?'technician_id':'team';
-  for(const row of sheet.rows){
-   if(delivery&&row.values[dateKey]){const date=gridDate(row.values[dateKey],false);if(date)row.values[dateKey]=date;}
-   const team=row.values[teamKey];
-   if(team){const matches=technicians.filter(t=>t.id===team||t.full_name.trim().toLowerCase()===team.trim().toLowerCase());if(matches.length!==1)throw new BadRequestException('Sheet Team must identify one active technician: '+team);row.values[teamKey]=matches[0].id;}
-  }
+  const normalize=(values:Values)=>{
+   if(delivery&&values[dateKey])values[dateKey]=gridDate(values[dateKey],false)||values[dateKey];
+   const team=values[teamKey]?.trim();
+   if(!team)return;
+   const byId=technicians.find(t=>t.id===team.toLowerCase());
+   const matches=technicians.filter(t=>t.full_name.trim().toLowerCase()===team.toLowerCase());
+   if(byId||matches.length===1)values[teamKey]=(byId??matches[0]).id;
+  };
+  for(const row of sheet.rows)normalize(row.values);
   const assignments:Array<{index:number;id:string}>=[],seen=new Set<string>();
   for(const row of sheet.rows){
    const month=recordMonth(row.values[dateKey]||locals.get(row.id)?.values[dateKey]||'');
@@ -77,7 +81,7 @@ export class SheetSyncService{
   if(assignments.length){
    await sheet.identify(assignments);
    const verified=await reader.read(c.spreadsheet_id,c.tab_name,fields,snapshots.length===0);
-   for(const a of assignments){const expected=sheet.rows.find(r=>r.id===a.id),actual=verified.rows.find(r=>r.id===a.id);if(actual){if(delivery&&actual.values[dateKey])actual.values[dateKey]=gridDate(actual.values[dateKey],false)||actual.values[dateKey];const team=actual.values[teamKey];const match=technicians.find(t=>t.id===team||t.full_name.trim().toLowerCase()===team?.trim().toLowerCase());if(match)actual.values[teamKey]=match.id;}if(!expected||!actual||!sameValues(expected.values,actual.values))throw new ConflictException('Identity review: sheet changed while assigning record identifiers. No operational data was imported.');}
+   for(const a of assignments){const expected=sheet.rows.find(r=>r.id===a.id),actual=verified.rows.find(r=>r.id===a.id);if(actual)normalize(actual.values);if(!expected||!actual||!sameValues(expected.values,actual.values))throw new ConflictException('Identity review: sheet changed while assigning record identifiers. No operational data was imported.');}
   }
   const columns:SyncColumn[]=[...sheet.columns,...(c.columns as SyncColumn[]).filter(old=>!sheet.columns.some(x=>x.id===old.id)).map(old=>({...old,active:false}))];
   // Column metadata changes never remove historical operational values.
@@ -100,7 +104,7 @@ export class SheetSyncService{
     if((current?.version??null)!==(local?.record.version??null))throw new ConflictException('A controller edited this row during synchronization. Retry preserves both changes.');
     const body={id:row.id,project_id:c.project_id,base_version:current?.version??null,mutation_id:randomUUID(),values:merged};
     if(!local||!sameValues(local.values,merged)){
-     if(delivery)await new ServiceDelivery(tx).saveOrder(body,actor);else await new ServiceAssurance(tx).save(body,actor);
+     if(delivery)await new ServiceDelivery(tx).saveOrder(body,actor,{sheetImport:true});else await new ServiceAssurance(tx).save(body,actor,{sheetImport:true});
      changed++;
     }
     await tx.query(`UPDATE sheet_sync_proposals SET status='superseded' WHERE configuration_id=$1 AND record_id=$2 AND status<>'superseded' AND NOT EXISTS (SELECT 1 FROM jsonb_each_text(proposed_values) p WHERE p.value IS DISTINCT FROM base_values->>p.key AND p.value IS DISTINCT FROM $3::jsonb->>p.key)`,[c.id,row.id,JSON.stringify(row.values)]);

@@ -35,7 +35,8 @@ export function useDeliveryGrid(projectId:string,userId:string,fields:Field[],ti
  if(!rows.current){
   const map=new Map(tickets.map(t=>{
    const values={...Object.fromEntries(Object.entries(t).filter(([key,value])=>key.startsWith('sheet_')&&typeof value==='string')),...ticketDraft(t,fields).values} as Record<string,string>;
-   values.technician_id=String(t.technician_name||technicians.find(p=>p.id===t.technician_id)?.full_name||t.technician_id||'');
+   if(recordsPath==='/service-assurance')values.team=String(t.team??'');
+   else values.technician_id=String(t.technician_name||technicians.find(p=>p.id===t.technician_id)?.full_name||t.technician_id||'');
    return [t.id,{id:t.id,values,record:t,base_version:t.version,draft_version:0,state:'record',errors:{},pending:[]}] as [string,GridRow];
   }));
   for(const d of drafts){const old=map.get(d.id),stale=d.state==='record'&&old&&old.base_version!==d.record_version;map.set(d.id,{...old,id:d.id,values:stale?old.values:d.raw_values,base_version:stale?old.base_version:d.record_version,draft_version:d.own_version??(d.user_id===userId?d.version:0),state:d.state,errors:d.errors,pending:[]});}

@@ -27,6 +27,14 @@ const run=()=> (new SheetSyncService() as any).process(config,{userId:id,role:'c
 describe('incremental synchronization',()=>{
  it('skips unchanged historical spreadsheets without reading cells',async()=>{state.revision.mockResolvedValue({version:'1'});await expect(run()).resolves.toMatchObject({status:'unchanged',records:0});expect(state.read).not.toHaveBeenCalled();expect(state.save).not.toHaveBeenCalled();});
  it('updates only changed records through the existing workflow service',async()=>{await expect(run()).resolves.toMatchObject({records:1});expect(state.save).toHaveBeenCalledOnce();expect(state.save.mock.calls[0][0]).toMatchObject({id,project_id:project,base_version:1,values:{actioned:'Delivered'}});});
+ it('imports unmatched Team text and continues saving other records',async()=>{
+  const other='d1234567-1234-4123-8123-123456789012';
+  state.read.mockResolvedValue({columns,rows:[{id,index:1,values:{...values,technician_id:'Habib'}},{id:other,index:2,values:{...values,ticket_number:'T2'}}],identify:vi.fn()});
+  const query=state.query.getMockImplementation()!;
+  state.query.mockImplementation((sql:string,args?:any[])=>sql.includes('SELECT id,project_id,version')&&args?.[0]===other?Promise.resolve([]):query(sql));
+  await expect(run()).resolves.toMatchObject({records:2});
+  expect(state.save.mock.calls[0]).toMatchObject([{id,values:{technician_id:'Habib'}},{role:'controller'},{sheetImport:true}]);
+ });
  it('matches the same record after sorting or inserting Sheet rows',async()=>{state.read.mockResolvedValue({columns,rows:[{id,index:99,values:{...values,actioned:'Delivered'}}],identify:vi.fn()});await run();expect(state.save.mock.calls[0][0]).toMatchObject({id,base_version:1});});
  it('retains records missing from Sheets and marks only their mapping',async()=>{state.read.mockResolvedValue({columns,rows:[],identify:vi.fn()});await expect(run()).resolves.toMatchObject({missing_preserved:1});expect(state.save).not.toHaveBeenCalled();expect(state.query.mock.calls.some(c=>c[0].startsWith('DELETE'))).toBe(false);expect(state.query.mock.calls.some(c=>c[0].includes('remote_deleted=true'))).toBe(true);});
  it('rejects duplicate stable row IDs before importing',async()=>{state.read.mockResolvedValue({columns,rows:[{id,index:1,values},{id,index:2,values}],identify:vi.fn()});await expect(run()).rejects.toThrow('Duplicate');expect(state.save).not.toHaveBeenCalled();});

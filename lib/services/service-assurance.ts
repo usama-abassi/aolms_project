@@ -24,7 +24,7 @@ export class ServiceAssurance{
  }
  async metadata(){return {fields:serviceAssuranceFields,technicians:await this.db.query("SELECT id,full_name FROM profiles WHERE role='technician' AND is_active ORDER BY full_name,id")};}
  async list(projectId:string){await this.project(projectId);return (await this.db.query('SELECT * FROM service_assurance_rows WHERE project_id=$1 ORDER BY created_at,id',[projectId])).map(record);}
- async save(body:any,actor:Actor){
+ async save(body:any,actor:Actor,{sheetImport=false}={}){
   const id=uuid(body?.id),projectId=uuid(body?.project_id),mutation=uuid(body?.mutation_id);
   if(body.base_version!==null&&(!Number.isInteger(body.base_version)||body.base_version<1))throw new BadRequestException('Record version is required');
   const keys=(await dynamicKeys(this.db,projectId,body.values?.date)).filter(key=>Object.hasOwn(body.values||{},key));
@@ -41,8 +41,17 @@ export class ServiceAssurance{
     return result(old);
    }
    if((old?.version??null)!==body.base_version)throw new ConflictException('This row changed elsewhere. Review the latest record before submitting again.');
-   const technician=values.team?uuid(values.team):null;
-   if(technician&&technician!==old?.technician_id){const [team]=await tx.query("SELECT id FROM profiles WHERE id=$1 AND role='technician' AND is_active",[technician]);if(!team)throw new BadRequestException('Select an active Team');}
+   let technician:string|null=null;
+   if(values.team){
+    const retain=sheetImport||(!old?.technician_id&&old?.raw_values?.team===values.team);
+    const teamId=retain?values.team:uuid(values.team).toLowerCase();
+    if(teamId===old?.technician_id&&!sheetImport)technician=teamId;
+    else {
+     const [team]=await tx.query("SELECT id FROM profiles WHERE id::text=$1 AND role='technician' AND is_active FOR SHARE",[teamId]);
+     if(!team&&!retain)throw new BadRequestException('Select an active Team');
+     technician=team?.id??null;
+    }
+   }
    const [row]=await tx.query(`INSERT INTO service_assurance_rows(id,project_id,technician_id,raw_values,mutation_id,updated_by,created_at)
     VALUES($1,$2,$3,$4,$5,$6,clock_timestamp()) ON CONFLICT(id) DO UPDATE SET technician_id=EXCLUDED.technician_id,raw_values=EXCLUDED.raw_values,
     mutation_id=EXCLUDED.mutation_id,updated_by=EXCLUDED.updated_by,version=service_assurance_rows.version+1,updated_at=clock_timestamp() RETURNING *`,[id,projectId,technician,JSON.stringify({...old?.raw_values,...values}),mutation,actor.userId]);

@@ -10,7 +10,7 @@ export class ServiceDelivery {
  constructor(private db:Database){}
  async list(project:string,actor:Actor){managerOnly(actor);return this.db.query(`SELECT t.*,p.full_name technician_name,c.full_name controller_name FROM assurance_tickets t LEFT JOIN profiles p ON p.id=t.technician_id LEFT JOIN profiles c ON c.id=t.controller_id WHERE t.project_id=$1 ORDER BY t.work_date DESC,t.id`,[uuid(project)]);}
  async metadata(actor:Actor){managerOnly(actor);return {technicians:await this.db.query("SELECT id,full_name FROM profiles WHERE role='technician' AND is_active ORDER BY full_name")};}
- async saveOrder(body:any,actor:Actor){
+ async saveOrder(body:any,actor:Actor,{sheetImport=false}={}){
   managerOnly(actor);const id=uuid(body.id),project=uuid(body.project_id),mutation=uuid(body.mutation_id);
   const keys=(await dynamicKeys(this.db,project,body.values?.work_date)).filter(key=>Object.hasOwn(body.values||{},key));
   const values=this.validate(body.values,[...controllerFields,...keys.map(key=>({key,label:key,type:'text'}))]);
@@ -22,10 +22,17 @@ export class ServiceDelivery {
    const [old]=await tx.query('SELECT * FROM assurance_tickets WHERE id=$1 FOR UPDATE',[id]);
    if(old?.last_mutation_id===mutation)return old;
    if(old&&(old.project_id!==project||old.version!==body.base_version)||!old&&body.base_version!=null)throw new ConflictException('Order changed. Refresh and review your retained draft.');
-   if(values.technician_id){const [tech]=await tx.query("SELECT id FROM profiles WHERE id=$1 AND role='technician' AND is_active FOR SHARE",[uuid(values.technician_id)]);if(!tech)throw new BadRequestException('Team must be an active Technician');}
+   let technicianId:string|null=null;
+   if(values.technician_id){
+    const team=values.technician_id;
+    const retain=sheetImport||(!old?.technician_id&&old?.spreadsheet_fields?.delivery?.technician_id===team);
+    const [tech]=await tx.query("SELECT id FROM profiles WHERE id::text=$1 AND role='technician' AND is_active FOR SHARE",[retain?team:uuid(team).toLowerCase()]);
+    if(!tech&&!retain)throw new BadRequestException('Team must be an active Technician');
+    technicianId=tech?.id??null;
+   }
    const extra={...old?.spreadsheet_fields,delivery:{...old?.spreadsheet_fields?.delivery,...values},wbs_type:values.order_type,wbs_connection_type:values.connection_type,new_ont_sn:values.nce_sn};
    // Resolved remains the internal legacy state; eligibility also checks the exact Actioned value.
-   const fields:any={project_id:project,ticket_number:values.ticket_number,work_date:values.work_date,technician_id:values.technician_id||null,controller_id:old?.controller_id||actor.userId,status:norm(values.actioned)==='delivered'?'Resolved':'Open',spreadsheet_fields:JSON.stringify(extra),last_mutation_id:mutation};
+   const fields:any={project_id:project,ticket_number:values.ticket_number,work_date:values.work_date,technician_id:technicianId,controller_id:old?.controller_id||actor.userId,status:norm(values.actioned)==='delivered'?'Resolved':'Open',spreadsheet_fields:JSON.stringify(extra),last_mutation_id:mutation};
    for(const k of ['exchange','mobile','lo_name','circuit','block','road','building','flat','package'])fields[k]=values[k]||null;
    const keys=Object.keys(fields);let saved;
    if(old)[saved]=await tx.query(`UPDATE assurance_tickets SET ${keys.map((k,i)=>`"${k}"=$${i+2}`).join(',')},version=version+1,updated_at=clock_timestamp() WHERE id=$1 RETURNING *`,[id,...Object.values(fields)]);
