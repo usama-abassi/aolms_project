@@ -3,4 +3,4 @@ import {getCpeReplacementsController} from '@/lib/services/registry';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 export const maxDuration=60;
-export const GET=endpoint(["admin","controller","technician"],async()=>getCpeReplacementsController().findAll(),200);
+export const GET=endpoint(["admin","controller"],async()=>getCpeReplacementsController().findAll(),200);

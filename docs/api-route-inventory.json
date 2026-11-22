@@ -256,8 +256,7 @@
     "action": "findAll",
     "roles": [
       "admin",
-      "controller",
-      "technician"
+      "controller"
     ],
     "args": [],
     "aliases": {}
@@ -408,8 +407,7 @@
     "action": "findAll",
     "roles": [
       "admin",
-      "controller",
-      "technician"
+      "controller"
     ],
     "args": [],
     "aliases": {}
@@ -421,8 +419,7 @@
     "action": "create",
     "roles": [
       "admin",
-      "controller",
-      "technician"
+      "controller"
     ],
     "args": [
       {
@@ -443,8 +440,7 @@
     "action": "findOneByOrderId",
     "roles": [
       "admin",
-      "controller",
-      "technician"
+      "controller"
     ],
     "args": [
       {
@@ -467,8 +463,7 @@
     "action": "update",
     "roles": [
       "admin",
-      "controller",
-      "technician"
+      "controller"
     ],
     "args": [
       {
@@ -499,8 +494,7 @@
     "action": "submit",
     "roles": [
       "admin",
-      "controller",
-      "technician"
+      "controller"
     ],
     "args": [
       {
@@ -1063,8 +1057,7 @@
     "action": "findOne",
     "roles": [
       "admin",
-      "controller",
-      "technician"
+      "controller"
     ],
     "args": [
       {
@@ -1161,8 +1154,7 @@
     "action": "findAll",
     "roles": [
       "admin",
-      "controller",
-      "technician"
+      "controller"
     ],
     "args": [
       {
@@ -1199,8 +1191,7 @@
     "action": "findOne",
     "roles": [
       "admin",
-      "controller",
-      "technician"
+      "controller"
     ],
     "args": [
       {

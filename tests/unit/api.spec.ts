@@ -31,6 +31,17 @@ describe('API compatibility and authorization',()=>{
    expect(await response.json()).toEqual({message:'No token provided',error:'Unauthorized',statusCode:401});
   }
  });
+ it('denies technicians access to unscoped legacy records and submission writes',async()=>{
+  mock.role='technician';
+  const paths=['attachments','orders','orders/[id]','order-assignments/[id]','delivery-submissions','delivery-submissions/[id]','delivery-submissions/[id]/submit','cpe-replacements'];
+  for(const path of paths){
+   for(const [method,handler] of Object.entries(handlers[`../../app/api/${path}/route.ts`])){
+    if(typeof handler!=='function')continue;
+    const response=await handler(new Request('http://test/api/'+path,{method,headers:{authorization:'Bearer test'}}),{});
+    expect(response.status,`${method} ${path}`).toBe(403);
+   }
+  }
+ });
  it('has a public health check without database credentials',async()=>{expect(await health().json()).toEqual({status:'ok'});});
  it('uses the database role rather than mutable JWT metadata',async()=>{
   mock.role='technician';await expect(authenticate(new Request('http://test',{headers:{authorization:'Bearer test'}}),['admin','controller'])).rejects.toMatchObject({status:403});
