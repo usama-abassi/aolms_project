@@ -1,6 +1,9 @@
 import {gridDate} from '../assurance-tickets/grid-values';
 export type Values=Record<string,string>;
 export type SyncColumn={id:string;key:string;label:string;index:number;active:boolean};
+export function isRecordIdentifierHeader(label:string){
+ return /^(?:(?:sr)?ticket|order|sr|service(request|order))(?:id|number|no|num)?$/.test(label.toLowerCase().replace(/[^a-z]/g,''));
+}
 const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 export function controllerDate(value:string,configuredMonth:string){
  const full=gridDate(value,false);

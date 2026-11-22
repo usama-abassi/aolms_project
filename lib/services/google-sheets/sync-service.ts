@@ -12,7 +12,7 @@ import {GoogleSheetsClient} from './google-client';
 import {stageProposals} from './proposal-gateway';
 import {SheetReader} from './sheet-reader';
 import {gridDate} from '../assurance-tickets/grid-values';
-import {controllerDate,recordMonth,mergeCells,sameValues,type Values,type SyncColumn} from './sync-model';
+import {controllerDate,isRecordIdentifierHeader,recordMonth,mergeCells,sameValues,type Values,type SyncColumn} from './sync-model';
 const fingerprint=(v:unknown)=>createHash('sha256').update(JSON.stringify(v)).digest('hex');
 export class SheetSyncService{
  async run(id:string,actor:Actor){
@@ -57,7 +57,9 @@ export class SheetSyncService{
   if(!sheet.columns.some(x=>x.key===dateKey)&&!snapshots.length)throw new BadRequestException('Initial import requires the controller Date column for monthly routing');
   const technicians=await db.query("SELECT id,full_name FROM profiles WHERE role='technician' AND is_active");
   const teamKey=delivery?'technician_id':'team';
+  const identifier=sheet.columns.find(column=>column.key==='ticket_number')??sheet.columns.find(column=>isRecordIdentifierHeader(column.label));
   const normalize=(values:Values)=>{
+   if(identifier&&identifier.key!=='ticket_number')values.ticket_number=values[identifier.key];
    if(values[dateKey])values[dateKey]=controllerDate(values[dateKey],c.month_key)||values[dateKey];
    const team=values[teamKey]?.trim();
    if(!team)return;
@@ -65,9 +67,10 @@ export class SheetSyncService{
    const matches=technicians.filter(t=>t.full_name.trim().toLowerCase()===team.toLowerCase());
    if(byId||matches.length===1)values[teamKey]=(byId??matches[0]).id;
   };
-  for(const row of sheet.rows)normalize(row.values);
+  const rows=sheet.rows.filter(row=>!!row.values[identifier?.key??'ticket_number']?.trim());
+  for(const row of rows)normalize(row.values);
   const assignments:Array<{index:number;id:string}>=[],seen=new Set<string>();
-  for(const row of sheet.rows){
+  for(const row of rows){
    const month=recordMonth(row.values[dateKey]||locals.get(row.id)?.values[dateKey]||'');
    if(!month)throw new BadRequestException(`Row ${row.index+1} has no valid controller Date. Use YYYY-MM-DD, DD/MM/YYYY, or D-MMM (for example, 1-Sep).`);
    if(month!==c.month_key){if(byId.has(row.id))throw new ConflictException('A synchronized row moved to another month. Review its Date and configuration before retrying.');continue;}
@@ -81,13 +84,13 @@ export class SheetSyncService{
   if(assignments.length){
    await sheet.identify(assignments);
    const verified=await reader.read(c.spreadsheet_id,c.tab_name,fields,snapshots.length===0);
-   for(const a of assignments){const expected=sheet.rows.find(r=>r.id===a.id),actual=verified.rows.find(r=>r.id===a.id);if(actual)normalize(actual.values);if(!expected||!actual||!sameValues(expected.values,actual.values))throw new ConflictException('Identity review: sheet changed while assigning record identifiers. No operational data was imported.');}
+   for(const a of assignments){const expected=rows.find(r=>r.id===a.id),actual=verified.rows.find(r=>r.id===a.id);if(actual)normalize(actual.values);if(!expected||!actual||!sameValues(expected.values,actual.values))throw new ConflictException('Identity review: sheet changed while assigning record identifiers. No operational data was imported.');}
   }
   const columns:SyncColumn[]=[...sheet.columns,...(c.columns as SyncColumn[]).filter(old=>!sheet.columns.some(x=>x.id===old.id)).map(old=>({...old,active:false}))];
   // Column metadata changes never remove historical operational values.
   if(JSON.stringify(columns)!==JSON.stringify(c.columns))await db.query('UPDATE sheet_configurations SET columns=$2 WHERE id=$1',[c.id,JSON.stringify(columns)]);
   let changed=0;
-  for(const row of sheet.rows){
+  for(const row of rows){
    if(!seen.has(row.id))continue;
    const snapshot=byId.get(row.id),local=locals.get(row.id);
    if(!snapshot&&local&&(local.values.ticket_number?.trim()!==row.values.ticket_number?.trim()||gridDate(local.values[dateKey],false)!==gridDate(row.values[dateKey],false)))throw new ConflictException('Initial record identifier does not match its existing ticket and Date. Review identifiers before importing.');

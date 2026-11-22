@@ -2,7 +2,7 @@ import 'server-only';
 import {randomUUID} from 'node:crypto';
 import {BadRequestException,ConflictException} from '@/lib/http';
 import {GoogleSheetsClient} from './google-client';
-import {type SyncColumn} from './sync-model';
+import {isRecordIdentifierHeader,type SyncColumn} from './sync-model';
 export type SheetSnapshot={sheetId:number;idColumn:number;columns:SyncColumn[];rows:Array<{index:number;id:string;values:Record<string,string>}>;identify:(assignments:Array<{index:number;id:string}>)=>Promise<void>};
 function columnIndex(letter: string) {
  return [...letter].reduce((index, character) => index * 26 + character.charCodeAt(0) - 64, 0) - 1;
@@ -67,7 +67,8 @@ export class SheetReader{
     const positionMatches=matchesByLabel.filter(field=>columnIndex(field.column||field.excelColumn||'')===i);
     const byLabel=matchesByLabel.length===1?matchesByLabel[0]:positionMatches[0];
     const explicitKeyExists=byLabel&&headers.some(value=>normal(value)===normal(byLabel.key));
-    const field=exactKey||(explicitKeyExists?undefined:byLabel);
+    const alias=known.find(field=>field.key==='ticket_number');
+    const field=exactKey||(explicitKeyExists?undefined:byLabel)||(!byLabel&&alias&&isRecordIdentifierHeader(header)&&!headers.some(value=>[normal(alias.key),normal(alias.label)].includes(normal(value)))?alias:undefined);
     const columnId=randomUUID();
     const key=field&&!reservedKeys.has(field.key)?field.key:'sheet_'+columnId.replace(/-/g,'');
     reservedKeys.add(key);

@@ -40,6 +40,14 @@ describe('incremental synchronization',()=>{
   await expect(run()).resolves.toMatchObject({records:1});
   expect(state.save.mock.calls[0][0]).toMatchObject({values:{work_date:'2026-10-01'}});
  });
+ it('skips stray rows without an identifier before checking dates or assigning IDs',async()=>{
+  const aliasColumns=columns.map(c=>c.key==='ticket_number'?{...c,key:'sheet_existing',label:'Ticket No.'}:c);
+  const identify=vi.fn();
+  state.read.mockResolvedValue({columns:aliasColumns,rows:[{id:'',index:966,values:{sheet_existing:' ',actioned:'stray text'}},{id,index:1,values:{work_date:values.work_date,sheet_existing:'T1',actioned:'Delivered'}}],identify});
+  await expect(run()).resolves.toMatchObject({records:1});
+  expect(identify).not.toHaveBeenCalled();
+  expect(state.save.mock.calls[0][0]).toMatchObject({values:{ticket_number:'T1'}});
+ });
  it('matches the same record after sorting or inserting Sheet rows',async()=>{state.read.mockResolvedValue({columns,rows:[{id,index:99,values:{...values,actioned:'Delivered'}}],identify:vi.fn()});await run();expect(state.save.mock.calls[0][0]).toMatchObject({id,base_version:1});});
  it('retains records missing from Sheets and marks only their mapping',async()=>{state.read.mockResolvedValue({columns,rows:[],identify:vi.fn()});await expect(run()).resolves.toMatchObject({missing_preserved:1});expect(state.save).not.toHaveBeenCalled();expect(state.query.mock.calls.some(c=>c[0].startsWith('DELETE'))).toBe(false);expect(state.query.mock.calls.some(c=>c[0].includes('remote_deleted=true'))).toBe(true);});
  it('rejects duplicate stable row IDs before importing',async()=>{state.read.mockResolvedValue({columns,rows:[{id,index:1,values},{id,index:2,values}],identify:vi.fn()});await expect(run()).rejects.toThrow('Duplicate');expect(state.save).not.toHaveBeenCalled();});
