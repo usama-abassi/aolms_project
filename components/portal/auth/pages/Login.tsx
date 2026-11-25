@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import {useRouter} from 'next/navigation';
 import Image from 'next/image';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase-browser';
 import { useTheme } from '../../app/theme/theme-context';
 import { Button } from '../../components/Button';
@@ -130,6 +131,8 @@ const Login: React.FC = () => {
           />
 
           <div className="relative"><Input id="password" label="Password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter your password" required error={error && !error.includes('role') ? error : undefined} /><button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-9 rounded p-1 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200" aria-label={showPassword ? 'Hide password' : 'Show password'}>{showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</button></div>
+
+          <div className="text-right"><Link href="/forgot-password" className="text-sm font-medium text-primary-700 hover:underline dark:text-primary-300">Forgot password?</Link></div>
 
           {error && error.includes('role') && (
             <div className="rounded-lg bg-warning-50 dark:bg-warning-950/30 p-4 border border-warning-200 dark:border-warning-800">

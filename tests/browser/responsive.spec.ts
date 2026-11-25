@@ -397,3 +397,64 @@ test('a valid session cannot mount a page for a different role',async({page})=>{
  await expect(page).toHaveURL(/\/login$/);
  expect(requests).toBe(0);
 });
+
+test('forgot password requests a recovery link without exposing account membership',async({page})=>{
+ await page.route('https://*.supabase.co/auth/v1/recover?*',async route=>{
+  expect(route.request().postDataJSON().email).toBe('technician@example.invalid');
+  expect(new URL(route.request().url()).searchParams.get('redirect_to')).toBe('http://127.0.0.1:4173/reset-password');
+  await route.fulfill({status:200,json:{},headers:{'access-control-allow-origin':'*'}});
+ });
+ await page.goto('/login');
+ await page.getByRole('link',{name:'Forgot password?'}).click();
+ await page.getByLabel('Email address').fill('technician@example.invalid');
+ await page.getByRole('button',{name:'Send reset link'}).click();
+ await expect(page.getByRole('status')).toContainText('If the address is registered');
+});
+
+test('ordinary sign-in cannot unlock the recovery form',async({page})=>{
+ await fixtures(page,'technician','light');
+ await page.goto('/reset-password');
+ await expect(page.getByRole('alert').filter({hasText:'invalid or expired'})).toBeVisible();
+ await expect(page.getByLabel('New password',{exact:true})).toHaveCount(0);
+});
+
+test('change password rejects an incorrect current password before updating',async({page})=>{
+ await fixtures(page,'technician','light');
+ let updates=0;
+ await page.route('https://*.supabase.co/auth/v1/**',async route=>{
+  const url=new URL(route.request().url());
+  if(url.pathname.endsWith('/token')&&url.searchParams.get('grant_type')==='password'){
+   expect(route.request().postDataJSON().password).toBe('incorrect-test-password');
+   await route.fulfill({status:400,json:{code:'invalid_credentials',msg:'Invalid credentials'},headers:{'access-control-allow-origin':'*'}});return;
+  }
+  if(route.request().method()==='PUT')updates++;
+  await route.fallback();
+ });
+ await page.goto('/technician/change-password');
+ await page.getByLabel('Current password').fill('incorrect-test-password');
+ await page.getByLabel('New password',{exact:true}).fill('replacement-test-123');
+ await page.getByLabel('Confirm new password').fill('replacement-test-123');
+ await page.getByRole('button',{name:'Change password',exact:true}).click();
+ await expect(page.getByRole('alert').filter({hasText:'Could not verify your current password'})).toBeVisible();
+ expect(updates).toBe(0);
+});
+
+test('a recovery link can set a new password and clears its credentials from the URL',async({page})=>{
+ const token=Buffer.from('{"alg":"HS256","typ":"JWT"}').toString('base64url')+'.'+Buffer.from(JSON.stringify({sub:uid,exp:Math.floor(Date.now()/1000)+3600})).toString('base64url')+'.test';
+ const user={id:uid,email:profile.email,aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{},created_at:profile.created_at};
+ let updates=0;
+ await page.route('https://*.supabase.co/auth/v1/**',async route=>{
+  if(route.request().method()==='PUT'){
+   expect(route.request().postDataJSON()).toMatchObject({password:'replacement-test-123'});
+   expect(route.request().headers().authorization).toBe('Bearer '+token);updates++;
+  }
+  await route.fulfill({status:200,json:user,headers:{'access-control-allow-origin':'*'}});
+ });
+ await page.goto('/reset-password#type=recovery&access_token='+token+'&refresh_token=test');
+ await page.getByLabel('New password',{exact:true}).fill('replacement-test-123');
+ await expect(page).toHaveURL(/\/reset-password$/);
+ await page.getByLabel('Confirm new password').fill('replacement-test-123');
+ await page.getByRole('button',{name:'Reset password',exact:true}).click();
+ await expect(page.getByRole('status')).toContainText('Password updated');
+ expect(updates).toBe(1);
+});

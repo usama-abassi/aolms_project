@@ -121,7 +121,9 @@ export const Header: React.FC<HeaderProps> = ({
                   <User className="w-4 h-4" aria-hidden="true" />
                   Profile
                 </button>}
-                {isAdmin && <div className="border-t border-neutral-200 dark:border-neutral-700 my-1" />}
+                <button type="button" onClick={()=>router.push('/'+pathname.split('/')[1]+'/change-password')}
+                  className="w-full px-4 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800">Change password</button>
+                <div className="my-1 border-t border-neutral-200 dark:border-neutral-700" />
                 <button
                   onClick={handleLogoutClick}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-danger-600 dark:text-danger-400 hover:bg-danger-50 dark:hover:bg-danger-950/30 transition-colors"
