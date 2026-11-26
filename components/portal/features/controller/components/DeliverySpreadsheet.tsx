@@ -1,5 +1,6 @@
 'use client';
 import {LoadingState} from '@/components/portal/components/LoadingState';
+import {inRecordMonth} from '../../assurance/record-months';
 import {displayControllerDate,recordMonth,type SyncColumn} from '@/lib/services/google-sheets/sync-model';
 import {supabase} from '@/lib/supabase-browser';
 import {randomId} from '../../../lib/uuid';
@@ -47,7 +48,7 @@ export default function DeliverySpreadsheet({projectId,userId,month='',columns}:
  useEffect(()=>{if(!query.data||loaded.current)return;loaded.current=true;let local:Row[]=[];try{
   const committed:Row[]=JSON.parse(localStorage.getItem(key)||'[]'),uncommitted:Row[]=JSON.parse(localStorage.getItem(key+':editing')||'[]');
   local=[...committed.filter(r=>!uncommitted.some(e=>e.id===r.id)),...uncommitted].filter(meaningful);
- }catch{}const server=query.data.filter(t=>!month||String(t.work_date).slice(0,7)===month).map(t=>({id:t.id,version:t.version,values:valuesForRecord(t)}));
+ }catch{}const server=query.data.filter(t=>inRecordMonth(t.work_date,month)).map(t=>({id:t.id,version:t.version,values:valuesForRecord(t)}));
  update([...server.map(r=>local.find(l=>l.id===r.id&&l.dirty)||r),...local.filter(l=>l.dirty&&!server.some(r=>r.id===l.id))]);},[query.data,key]);
  function change(id:string,k:string,value:string){update(rowsRef.current.map(r=>{
   if(r.id!==id)return r;const values={...r.values,[k]:value};return {...r,dirty:stored(r)||hasCellData(values),error:undefined,values};

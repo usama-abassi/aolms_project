@@ -8,7 +8,7 @@ import {auditOrder,calculateResponse,controllerFields,norm,orderValues,responseF
 
 export class ServiceDelivery {
  constructor(private db:Database){}
- async list(project:string,actor:Actor){managerOnly(actor);return this.db.query(`SELECT t.*,p.full_name technician_name,c.full_name controller_name FROM assurance_tickets t LEFT JOIN profiles p ON p.id=t.technician_id LEFT JOIN profiles c ON c.id=t.controller_id WHERE t.project_id=$1 ORDER BY t.work_date DESC,t.id`,[uuid(project)]);}
+ async list(project:string,actor:Actor){managerOnly(actor);return this.db.query(`SELECT t.*,to_char(t.work_date,'YYYY-MM-DD') AS work_date,p.full_name technician_name,c.full_name controller_name FROM assurance_tickets t LEFT JOIN profiles p ON p.id=t.technician_id LEFT JOIN profiles c ON c.id=t.controller_id WHERE t.project_id=$1 ORDER BY t.work_date DESC,t.id`,[uuid(project)]);}
  async metadata(actor:Actor){managerOnly(actor);return {technicians:await this.db.query("SELECT id,full_name FROM profiles WHERE role='technician' AND is_active ORDER BY full_name")};}
  async saveOrder(body:any,actor:Actor,{sheetImport=false}={}){
   managerOnly(actor);const id=uuid(body.id),project=uuid(body.project_id),mutation=uuid(body.mutation_id);

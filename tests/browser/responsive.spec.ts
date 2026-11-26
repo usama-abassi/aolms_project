@@ -462,8 +462,8 @@ test('a recovery link can set a new password and clears its credentials from the
 test('Projects and Audit default to the latest month with records and allow older months',async({page})=>{
  await fixtures(page,'controller','light');
  const orders=[
-  {id:ticketId,version:1,work_date:'2026-01-15',ticket_number:'JAN-ONLY'},
-  {id:orderId,version:1,work_date:'2026-02-05',ticket_number:'FEB-LATEST'}
+  {id:ticketId,version:1,work_date:'2026-01-15T00:00:00.000Z',ticket_number:'JAN-ONLY'},
+  {id:orderId,version:1,work_date:'2026-02-05T00:00:00.000Z',ticket_number:'FEB-LATEST'}
  ];
  await page.route('**/api/sheet-configurations',route=>route.fulfill({json:[{project_id:project.id,month_key:'2026-03',columns:[]}]}));
  await page.route('**/api/service-delivery/workflow?*',route=>{
