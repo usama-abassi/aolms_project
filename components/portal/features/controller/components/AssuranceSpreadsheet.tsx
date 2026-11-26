@@ -13,7 +13,7 @@ import PlainTextCell from './PlainTextCell';
 import SpreadsheetInteraction from './SpreadsheetInteraction'
 import {gridDestination,gridPage} from './spreadsheet-rows';
 import type {CSSProperties} from 'react';
-import {useSpreadsheetSizing} from './useSpreadsheetSizing';
+import {spreadsheetColumnLabel,useSpreadsheetSizing} from './useSpreadsheetSizing';
 import {useGridFocus} from './useGridFocus';
 import {useDeliveryGrid,type ServerDraft} from './useDeliveryGrid';
 import {protectedGridFields} from '@/lib/services/assurance-tickets/grid-values';
@@ -26,7 +26,7 @@ export default function AssuranceSpreadsheet({projectId,userId,serviceAssurance=
  const [refreshKey,setRefreshKey]=useState(0);
  if(meta.isPending||records.isPending||drafts.isPending)return <LoadingState message={'Loading '+(serviceAssurance?'Service Assurance':'Service Delivery')+"…"}/>;
  if(meta.error||records.error||drafts.error)return <p role="alert">{meta.error?.message||records.error?.message||drafts.error?.message}</p>;
- return <DeliveryGrid key={`${projectId}:${userId}:${refreshKey}`} projectId={projectId} userId={userId} serviceAssurance={serviceAssurance} month={month} fields={columns?.length?columns.filter(c=>c.active).map(c=>({...meta.data!.fields.find(f=>f.key===c.key),key:c.key,label:c.label,excelColumn:String(c.index+1),storage:c.key,type:meta.data!.fields.find(f=>f.key===c.key)?.type||'text'})):meta.data!.fields} technicians={meta.data!.technicians} tickets={records.data!.filter(t=>!month||recordMonth(String(t.date||''))===month)} drafts={drafts.data!} refresh={async()=>{await Promise.all([records.refetch(),drafts.refetch()]);setRefreshKey(v=>v+1);}}/>;
+ return <DeliveryGrid key={`${projectId}:${userId}:${refreshKey}`} projectId={projectId} userId={userId} serviceAssurance={serviceAssurance} month={month} fields={columns?.length?columns.filter(c=>c.active).map(c=>({...meta.data!.fields.find(f=>f.key===c.key),key:c.key,label:c.label,excelColumn:spreadsheetColumnLabel(c.index),storage:c.key,type:meta.data!.fields.find(f=>f.key===c.key)?.type||'text'})):meta.data!.fields} technicians={meta.data!.technicians} tickets={records.data!.filter(t=>!month||recordMonth(String(t.date||''))===month)} drafts={drafts.data!} refresh={async()=>{await Promise.all([records.refetch(),drafts.refetch()]);setRefreshKey(v=>v+1);}}/>;
 }
 function DeliveryGrid({projectId,userId,serviceAssurance,month,fields,technicians,tickets,drafts,refresh}:{projectId:string;userId:string;serviceAssurance:boolean;month:string;fields:Field[];technicians:Array<{id:string;full_name:string}>;tickets:Ticket[];drafts:ServerDraft[];refresh:()=>Promise<void>}){
  const sizing=useSpreadsheetSizing(fields.map(f=>f.key),72);

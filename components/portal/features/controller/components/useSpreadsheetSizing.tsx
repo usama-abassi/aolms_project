@@ -1,6 +1,12 @@
 'use client';
 import {useRef,useState} from 'react';
 
+export function spreadsheetColumnLabel(index:number){
+ let label='';
+ for(let n=index+1;n>0;n=Math.floor((n-1)/26))label=String.fromCharCode(65+(n-1)%26)+label;
+ return label;
+}
+
 // Defaults follow the amount of content each controller field needs.
 const defaultWidths:Record<string,number>={
  date:80,work_date:80,exchange:68,block:62,road:62,building:64,flat:58,slot:58,

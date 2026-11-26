@@ -14,13 +14,13 @@ import {GridSaveStatus} from './GridSaveStatus';
 import PlainTextCell from './PlainTextCell';
 import {hasCellData,withEmptyRow,gridDestination,gridPage} from './spreadsheet-rows';
 import type {CSSProperties} from 'react';
-import {useSpreadsheetSizing} from './useSpreadsheetSizing';
+import {spreadsheetColumnLabel,useSpreadsheetSizing} from './useSpreadsheetSizing';
 import {useGridFocus} from './useGridFocus';
 import SpreadsheetInteraction from './SpreadsheetInteraction'
 import {type CellWrite,type CellChange} from './spreadsheet-selection'
 type Row={id:string;version:number|null;values:Values;dirty?:boolean;error?:string};
 export default function DeliverySpreadsheet({projectId,userId,month='',columns}:{projectId:string;userId:string;month?:string;columns?:SyncColumn[]}){
- const controllerFields=columns?.length?columns.filter(c=>c.active).map(c=>({...defaultFields.find(f=>f.key===c.key),key:c.key,label:c.label,column:String(c.index+1),type:defaultFields.find(f=>f.key===c.key)?.type||'text'})):defaultFields;
+ const controllerFields=columns?.length?columns.filter(c=>c.active).map(c=>({...defaultFields.find(f=>f.key===c.key),key:c.key,label:c.label,column:spreadsheetColumnLabel(c.index),type:defaultFields.find(f=>f.key===c.key)?.type||'text'})):defaultFields;
  const sizing=useSpreadsheetSizing(controllerFields.map(f=>f.key));
  const valuesForRecord=(r:any)=>({...orderValues(r),...r.spreadsheet_fields?.delivery});
  const meta=useQuery({queryKey:['delivery-metadata'],queryFn:()=>api<{technicians:any[]}>('/service-delivery/workflow?mode=metadata')});
