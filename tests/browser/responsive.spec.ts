@@ -367,6 +367,9 @@ test('Delivery grid shows one save status and contains wide cells on mobile',asy
  const column=section.getByRole('button',{name:'Resize Date column',exact:true});
  const header=section.getByRole('columnheader').filter({has:page.getByRole('button',{name:'Resize Date column',exact:true})});
  const beforeWidth=(await header.boundingBox())!.width;
+ expect(beforeWidth).toBeLessThan(95);
+ const exchange=section.getByRole('columnheader').filter({has:page.getByRole('button',{name:'Resize Exc column',exact:true})});
+ expect((await exchange.boundingBox())!.width).toBeLessThan(beforeWidth);
  await column.press('ArrowRight');
  await expect.poll(async()=>(await header.boundingBox())!.width).toBeGreaterThan(beforeWidth);
  const handle=section.getByRole('button',{name:'Resize row 1',exact:true});
