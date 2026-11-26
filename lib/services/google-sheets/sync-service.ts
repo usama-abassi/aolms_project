@@ -78,6 +78,7 @@ export class SheetSyncService{
   const identifier=sheet.columns.find(column=>column.key==='ticket_number')??sheet.columns.find(column=>isRecordIdentifierHeader(column.label));
   const normalize=(values:Values)=>{
    if(identifier&&identifier.key!=='ticket_number')values.ticket_number=values[identifier.key];
+   if(values.ticket_number)values.ticket_number=values.ticket_number.trim();
    if(values[dateKey])values[dateKey]=controllerDate(values[dateKey],c.month_key)||values[dateKey];
    if(delivery&&values.appointment)values.appointment=controllerDate(values.appointment,c.month_key)||values.appointment;
    const team=values[teamKey]?.trim();
@@ -88,23 +89,21 @@ export class SheetSyncService{
   };
   const latest=new Map<string,(typeof sheet.rows)[number]>();
   let duplicates=0;
+  const inMonth=(row:(typeof sheet.rows)[number])=>recordMonth(controllerDate(row.values[dateKey]||'',c.month_key)||locals.get(row.id)?.values[dateKey]||'')===c.month_key;
   for(const row of sheet.rows){
    const ticket=row.values[identifier?.key??'ticket_number']?.trim();
    if(!ticket)continue;
    const prior=latest.get(ticket);
    if(prior)duplicates++;
-   if(!prior||row.index>prior.index)latest.set(ticket,row);
+   if(!prior||(inMonth(row)===inMonth(prior)?row.index>prior.index:inMonth(row)))latest.set(ticket,row);
   }
   const rows=[...latest.values()].sort((a,b)=>a.index-b.index);
   for(const row of rows)normalize(row.values);
   const existingByTicket=new Map([...locals].map(([id,l])=>[l.values.ticket_number?.trim(),id]));
-  const outsideMonth=delivery&&latest.size?new Set((await db.query(`SELECT id,ticket_number FROM assurance_tickets WHERE ticket_number=ANY($1::text[])`,[[...latest.keys()]])).filter(t=>!locals.has(t.id)).map(t=>t.ticket_number)):new Set<string>();
-  let outsideMonthSkipped=0;
   const assignments:Array<{index:number;id:string}>=[],seen=new Set<string>();
   const skipped=new Set<number>();
   for(const row of rows){
    const ticket=row.values.ticket_number.trim();
-   if(outsideMonth.has(ticket)){outsideMonthSkipped++;skipped.add(row.index);continue;}
    const month=recordMonth(row.values[dateKey]||locals.get(row.id)?.values[dateKey]||'');
    if(!month)throw new BadRequestException(`Row ${row.index+1} has no valid controller Date. Use YYYY-MM-DD, DD/MM/YYYY, or D-MMM (for example, 1-Sep).`);
    if(month!==c.month_key){if(byId.has(row.id))throw new ConflictException('A synchronized row moved to another month. Review its Date and configuration before retrying.');skipped.add(row.index);continue;}
@@ -161,7 +160,7 @@ export class SheetSyncService{
   await this.proposals(c,locals,byId);
   // Store the version observed before reads. Metadata writes cause one extra scan, never missed updates.
   await db.query('UPDATE sheet_configurations SET remote_revision=$2 WHERE id=$1',[c.id,String(revision.version)]);
-  return {status:'synchronized',records:changed,duplicates_skipped:duplicates,existing_outside_month_skipped:outsideMonthSkipped,missing_preserved:missing.length};
+  return {status:'synchronized',records:changed,duplicates_skipped:duplicates,missing_preserved:missing.length};
  }
  private async propose(configuration:string,record:string,base:Values,values:Values,database=db){
   await database.query(`INSERT INTO sheet_sync_proposals(configuration_id,record_id,base_values,proposed_values,fingerprint) VALUES($1,$2,$3,$4,$5) ON CONFLICT(configuration_id,record_id,fingerprint) DO UPDATE SET status='pending' WHERE sheet_sync_proposals.status='superseded'`,[configuration,record,JSON.stringify(base),JSON.stringify(values),fingerprint({base,values})]);

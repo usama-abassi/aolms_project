@@ -84,6 +84,14 @@ describe('incremental synchronization',()=>{
   expect(identify).toHaveBeenCalledWith([{index:3,id}]);
   expect(state.save.mock.calls[0][0]).toMatchObject({id,values:{work_date:'2026-10-20',actioned:'Delivered'}});
  });
+ it('keeps the latest duplicate in the configured month even when a later row is from another month',async()=>{
+  state.read.mockResolvedValue({columns,rows:[
+   {id,index:2,values:{...values,actioned:'Delivered'}},
+   {id,index:3,values:{...values,work_date:'2026-11-01',actioned:'Rejected'}}
+  ],identify:vi.fn()});
+  await expect(run()).resolves.toMatchObject({records:1});
+  expect(state.save.mock.calls[0][0]).toMatchObject({id,values:{actioned:'Delivered'}});
+ });
  it('matches the same record after sorting or inserting Sheet rows',async()=>{state.read.mockResolvedValue({columns,rows:[{id,index:99,values:{...values,actioned:'Delivered'}}],identify:vi.fn()});await run();expect(state.save.mock.calls[0][0]).toMatchObject({id,base_version:1});});
  it('retains records missing from Sheets and marks only their mapping',async()=>{state.read.mockResolvedValue({columns,rows:[],identify:vi.fn()});await expect(run()).resolves.toMatchObject({missing_preserved:1});expect(state.save).not.toHaveBeenCalled();expect(state.query.mock.calls.some(c=>c[0].startsWith('DELETE'))).toBe(false);expect(state.query.mock.calls.some(c=>c[0].includes('remote_deleted=true'))).toBe(true);});
  it('rejects duplicate stable row IDs before importing',async()=>{state.read.mockResolvedValue({columns,rows:[{id,index:1,values},{id,index:2,values:{...values,ticket_number:"T2"}}],identify:vi.fn()});await expect(run()).rejects.toThrow('Duplicate');expect(state.save).not.toHaveBeenCalled();});

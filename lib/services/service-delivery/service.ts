@@ -14,6 +14,7 @@ export class ServiceDelivery {
   managerOnly(actor);const id=uuid(body.id),project=uuid(body.project_id),mutation=uuid(body.mutation_id);
   const keys=(await dynamicKeys(this.db,project,body.values?.work_date)).filter(key=>Object.hasOwn(body.values||{},key));
   const values=this.validate(body.values,[...controllerFields,...keys.map(key=>({key,label:key,type:'text'}))]);
+  values.ticket_number=values.ticket_number.trim();
   if(!values.work_date||!values.ticket_number)throw new BadRequestException('Date and Order are required');
   return this.db.transaction(async tx=>{
    await tx.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[id]);
