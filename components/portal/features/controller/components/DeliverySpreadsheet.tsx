@@ -20,7 +20,7 @@ export default function DeliverySpreadsheet({projectId,userId,month='',columns}:
  const controllerFields=columns?.length?columns.filter(c=>c.active).map(c=>({...defaultFields.find(f=>f.key===c.key),key:c.key,label:c.label,column:String(c.index+1),type:defaultFields.find(f=>f.key===c.key)?.type||'text'})):defaultFields;
  const valuesForRecord=(r:any)=>({...orderValues(r),...r.spreadsheet_fields?.delivery});
  const meta=useQuery({queryKey:['delivery-metadata'],queryFn:()=>api<{technicians:any[]}>('/service-delivery/workflow?mode=metadata')});
- const query=useQuery({queryKey:['delivery-orders',projectId],queryFn:()=>api<any[]>(`/service-delivery/workflow?project_id=${projectId}`)});
+ const query=useQuery({queryKey:['delivery-orders',projectId],staleTime:15_000,queryFn:()=>api<any[]>(`/service-delivery/workflow?project_id=${projectId}`)});
  const [rows,setRows]=useState<Row[]>([]),[search,setSearch]=useState(''),[action,setAction]=useState(''),[team,setTeam]=useState(''),[sort,setSort]=useState('work_date'),[asc,setAsc]=useState(false),[page,setPage]=useState(0),[busy,setBusy]=useState(false),[notice,setNotice]=useState('');
  const [missingOnly,setMissingOnly]=useState(false);
  const [review,setReview]=useState<{local:Row;server:any}|null>(null);

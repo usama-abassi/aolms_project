@@ -94,7 +94,7 @@ export class ServiceAssurance{
    if(serial&&po.po_status!=='Found')output.issues.push(po.po_status)
    if(output.report)output.report[50]=[r.response_values?.['Comments and/or questions']||'',...output.issues].filter(Boolean).join('\n')
    const assigned=gridDate(v.assigned_datetime||'',true)
-   return {id:r.id,ticket_number:v.ticket_number||'',team:r.team||'',assigned_date:assigned?new Date(Date.parse(assigned)+3*3600000).toISOString().slice(0,10):null,
+   return {id:r.id,ticket_number:v.ticket_number||'',team:r.team||'',work_date:v.date||'',assigned_date:assigned?new Date(Date.parse(assigned)+3*3600000).toISOString().slice(0,10):null,
     assigned_datetime:v.assigned_datetime||'',old_serial:v.old_serial||'',new_serial:v.new_serial||'',status:v.status,resolution:v.resolution,ont_model:v.ont_model,
     submitted_at:r.submitted_at,technician:r.responder||'',technician_ont:r.response_values?.['ONT Replaced ']||'',technician_serial:r.response_values?.['New ONT Serial No ']||'',
     controller_values:v,response_values:r.response_values,ont_replaced:!!serial,material_mismatch,...po,...output}

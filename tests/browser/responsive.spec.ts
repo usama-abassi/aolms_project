@@ -349,7 +349,7 @@ test('Delivery grid shows one save status and contains wide cells on mobile',asy
   }]});
  });
  await page.goto('/controller/projects');
- const loading=page.getByRole('status').filter({hasText:'Loading Service Delivery'});
+ const loading=page.getByRole('status').filter({hasText:'Loading records'});
  try {
   await expect(loading).toBeVisible();
   await expect(page.getByRole('table',{name:'Service Delivery spreadsheet'})).toHaveCount(0);
@@ -457,4 +457,28 @@ test('a recovery link can set a new password and clears its credentials from the
  await page.getByRole('button',{name:'Reset password',exact:true}).click();
  await expect(page.getByRole('status')).toContainText('Password updated');
  expect(updates).toBe(1);
+});
+
+test('Projects and Audit default to the latest month with records and allow older months',async({page})=>{
+ await fixtures(page,'controller','light');
+ const orders=[
+  {id:ticketId,version:1,work_date:'2026-01-15',ticket_number:'JAN-ONLY'},
+  {id:orderId,version:1,work_date:'2026-02-05',ticket_number:'FEB-LATEST'}
+ ];
+ await page.route('**/api/sheet-configurations',route=>route.fulfill({json:[{project_id:project.id,month_key:'2026-03',columns:[]}]}));
+ await page.route('**/api/service-delivery/workflow?*',route=>{
+  const mode=new URL(route.request().url()).searchParams.get('mode');
+  return route.fulfill({json:mode==='metadata'?{technicians:[]}:mode==='audit'?orders.map(order=>({id:order.id,order,technician:'',response:{},issues:[],mappingIssues:[],submitted:false,ready:false})):orders});
+ });
+ for(const screen of ['projects','audit']){
+  await page.goto('/controller/'+screen);
+  const month=page.getByRole('combobox',{name:'Month',exact:true});
+  await expect(month).toHaveValue('2026-02');
+  const table=page.locator('main table');
+  if(screen==='projects')await expect(table.getByRole('textbox',{name:'Order row 1',exact:true})).toHaveValue('FEB-LATEST');
+  else await expect(table.getByRole('row',{name:/FEB-LATEST/})).toBeVisible();
+  await month.selectOption('2026-01');
+  if(screen==='projects')await expect(table.getByRole('textbox',{name:'Order row 1',exact:true})).toHaveValue('JAN-ONLY');
+  else await expect(table.getByRole('row',{name:/JAN-ONLY/})).toBeVisible();
+ }
 });

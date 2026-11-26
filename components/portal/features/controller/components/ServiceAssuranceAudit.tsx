@@ -1,6 +1,8 @@
 'use client'
 import {useState} from 'react'
 import {useQuery} from '@tanstack/react-query'
+import RecordMonthSelect from '../../assurance/RecordMonthSelect';
+import {recordMonths,inRecordMonth} from '../../assurance/record-months';
 import {api} from '../../assurance/api'
 import {Button} from '../../../components/Button'
 import {Table} from '../../../components/Table'
@@ -11,7 +13,12 @@ import {assuranceReportColumns,assuranceReportGroups} from '@/lib/service-assura
 export default function ServiceAssuranceAudit({projectId}:{projectId:string}){
  const [tab,setTab]=useState<AssuranceAuditTab>('all'),[from,setFrom]=useState(''),[to,setTo]=useState(''),[search,setSearch]=useState(''),[page,setPage]=useState(0),[selected,setSelected]=useState<AssuranceAuditRow|null>(null),[error,setError]=useState('')
  const query=useQuery({queryKey:['service-assurance-audit',projectId],queryFn:()=>api<AssuranceAuditRow[]>(`/service-assurance/audit?project_id=${projectId}`),refetchInterval:30000})
- const {rows,counts}=filterAssuranceAudit(query.data||[],from,to,search,tab),pages=Math.max(1,Math.ceil(rows.length/50)),current=Math.min(page,pages-1)
+ const [selectedMonth,setSelectedMonth]=useState<string|null>(null);
+ const months=recordMonths((query.data||[]).map(r=>r.work_date));
+ const month=selectedMonth??months[0]??'';
+ const monthRows=(query.data||[]).filter(r=>inRecordMonth(r.work_date,month));
+ const monthFilter=<RecordMonthSelect months={months} value={month} onChange={value=>{setSelectedMonth(value);setFrom('');setTo('');setPage(0);}}/>;
+ const {rows,counts}=filterAssuranceAudit(monthRows,from,to,search,tab),pages=Math.max(1,Math.ceil(rows.length/50)),current=Math.min(page,pages-1)
  const field='mt-1 block rounded border bg-transparent p-2 dark:border-neutral-600'
  async function exportReport(){
   try{
@@ -26,7 +33,7 @@ export default function ServiceAssuranceAudit({projectId}:{projectId:string}){
  }
  return <section className="space-y-4" aria-label="Service Assurance audit">
  <div role="tablist" aria-label="Audit filters" className="flex flex-wrap gap-2">{([['all','Total Orders'],['submitted','Submitted'],['unfilled','Not Submitted'],['ont','ONT Replaced'],['mismatches','Material Mismatches'],['po','PO Missing']] as const).map(([key,label])=><Button key={key} role="tab" aria-selected={tab===key} variant={tab===key?'primary':'outline'} onClick={()=>{setTab(key);setPage(0)}}>{label} ({counts[key]})</Button>)}<Button variant="outline" onClick={()=>query.refetch()} disabled={query.isFetching}>Refresh</Button><Button onClick={exportReport} disabled={!rows.some(r=>r.submitted_at)}>Export filtered report</Button></div>
- <div className="flex flex-wrap gap-3"><label>Assigned date from<input type="date" className={field} value={from} onChange={e=>{setFrom(e.target.value);setPage(0)}}/></label><label>Assigned date to<input type="date" className={field} value={to} onChange={e=>{setTo(e.target.value);setPage(0)}}/></label><label className="min-w-64 flex-1">Search<input className={`${field} w-full`} placeholder="Ticket, team, or serial number" value={search} onChange={e=>{setSearch(e.target.value);setPage(0)}}/></label></div>
+ <div className="flex flex-wrap gap-3">{!query.isPending&&monthFilter}<label>Assigned date from<input type="date" className={field} value={from} onChange={e=>{setFrom(e.target.value);setPage(0)}}/></label><label>Assigned date to<input type="date" className={field} value={to} onChange={e=>{setTo(e.target.value);setPage(0)}}/></label><label className="min-w-64 flex-1">Search<input className={`${field} w-full`} placeholder="Ticket, team, or serial number" value={search} onChange={e=>{setSearch(e.target.value);setPage(0)}}/></label></div>
  {(error||query.error)&&<p role="alert">{error||query.error?.message}</p>}
  <Table columns={[
   {key:'id',label:'Details',render:(_v:unknown,row:AssuranceAuditRow)=><Button variant="outline" onClick={()=>setSelected(row)}>Inspect</Button>},

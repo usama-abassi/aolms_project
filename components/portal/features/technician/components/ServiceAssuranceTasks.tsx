@@ -2,19 +2,25 @@
 import {LoadingState} from '@/components/portal/components/LoadingState';
 import {useState,useRef,useEffect} from 'react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
+import RecordMonthSelect from '../../assurance/RecordMonthSelect';
+import {recordMonths,inRecordMonth} from '../../assurance/record-months';
 import {api} from '../../assurance/api';
 import {Button} from '../../../components/Button';
 import {Modal} from '../../../components/Modal';
 import {Table} from '../../../components/Table';
 import {serviceAssuranceResponseFields,responseIdentifiers,materialFields} from '@/lib/service-assurance-fields';
 
-type Task={id:string;ticket_number:string;team_name:string;assigned_datetime:string;old_serial:string;new_serial:string;submitted_at:string|null};
+type Task={id:string;date?:string;ticket_number:string;team_name:string;assigned_datetime:string;old_serial:string;new_serial:string;submitted_at:string|null};
 type ResponseData={id:string;version:number;response_version:number;values:Record<string,string>;submitted_at:string|null};
 export default function ServiceAssuranceTasks({userId,todo}:{userId:string;todo:boolean}){
  const [selected,setSelected]=useState<string|null>(null),[page,setPage]=useState(0);
  const tasks=useQuery({queryKey:['service-assurance-tasks',userId],queryFn:()=>api<Task[]>('/service-assurance/tasks'),refetchInterval:60000});
- const rows=(tasks.data||[]).filter(r=>todo?!r.submitted_at:!!r.submitted_at),pages=Math.max(1,Math.ceil(rows.length/20)),current=Math.min(page,pages-1);
+ const [selectedMonth,setSelectedMonth]=useState<string|null>(null);
+ const months=recordMonths((tasks.data||[]).map(r=>r.date));
+ const month=selectedMonth??months[0]??'';
+ const rows=(tasks.data||[]).filter(r=>inRecordMonth(r.date,month)).filter(r=>todo?!r.submitted_at:!!r.submitted_at),pages=Math.max(1,Math.ceil(rows.length/20)),current=Math.min(page,pages-1);
  return <section className="space-y-3" aria-label="Service Assurance tasks"><h2 className="text-lg font-semibold">Service Assurance ({rows.length})</h2>
+ {!tasks.isPending&&<RecordMonthSelect months={months} value={month} onChange={value=>{setSelectedMonth(value);setPage(0);}}/>}
  {tasks.error?<p role="alert">{tasks.error.message}</p>:<Table columns={[{key:'id',label:'Action',render:(_v:unknown,row:Task)=><Button variant="outline" onClick={()=>setSelected(row.id)}>{row.submitted_at?'View':'Fill response'}</Button>},{key:'ticket_number',label:'Ticket No'},{key:'team_name',label:'Team'},{key:'assigned_datetime',label:'Assigned Date/Time'},{key:'old_serial',label:'SN OLD ONT'},{key:'new_serial',label:'New SN No As Per NCE'},{key:'submitted_at',label:'Response',render:v=>v?'Submitted':'Not filled'}]} data={rows.slice(current*20,(current+1)*20)} rowKey="id" isLoading={tasks.isPending} emptyMessage={`No ${todo?'pending':'submitted'} Service Assurance replacement tickets.`}/>}
  {pages>1&&<div className="flex items-center gap-3"><Button variant="outline" disabled={!current} onClick={()=>setPage(current-1)}>Previous</Button><span>Page {current+1} of {pages}</span><Button variant="outline" disabled={current+1>=pages} onClick={()=>setPage(current+1)}>Next</Button></div>}
  {selected&&<ResponseForm key={selected} id={selected} userId={userId} close={()=>setSelected(null)}/>}

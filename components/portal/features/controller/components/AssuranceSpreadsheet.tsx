@@ -19,7 +19,7 @@ import {protectedGridFields} from '@/lib/services/assurance-tickets/grid-values'
 export default function AssuranceSpreadsheet({projectId,userId,serviceAssurance=false,month='',columns}:{projectId:string;userId:string;serviceAssurance?:boolean;month?:string;columns?:SyncColumn[]}){
  const base=serviceAssurance?'/service-assurance':'/assurance-tickets';
  const meta=useQuery({queryKey:serviceAssurance?[base,'metadata',userId]:['assurance-metadata',userId],queryFn:()=>api<{fields:Field[];technicians:Array<{id:string;full_name:string}>}>(`${base}/metadata`)});
- const records=useQuery({queryKey:serviceAssurance?[base,userId,projectId]:['assurance-tickets',userId,projectId],queryFn:()=>api<Ticket[]>(`${base}?project_id=${projectId}`)});
+ const records=useQuery({queryKey:serviceAssurance?[base,userId,projectId]:['assurance-tickets',userId,projectId],staleTime:15_000,queryFn:()=>api<Ticket[]>(`${base}?project_id=${projectId}`)});
  const drafts=useQuery({queryKey:serviceAssurance?[base,'grid-drafts',userId,projectId]:['delivery-grid-drafts',userId,projectId],queryFn:()=>api<ServerDraft[]>(`${base}/grid?project_id=${projectId}`)});
  const [refreshKey,setRefreshKey]=useState(0);
  if(meta.isPending||records.isPending||drafts.isPending)return <LoadingState message={'Loading '+(serviceAssurance?'Service Assurance':'Service Delivery')+"…"}/>;
