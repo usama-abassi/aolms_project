@@ -9,6 +9,7 @@ import {serviceAssuranceFields} from '@/lib/service-assurance-fields';
 import {ServiceDelivery} from '../service-delivery/service';
 import {ServiceAssurance} from '../service-assurance';
 import {GoogleSheetsClient} from './google-client';
+import {reconcileDeliveryTeams} from './delivery-team-reconciliation';
 import {applyOutboundChanges} from './proposal-gateway';
 import {SheetReader} from './sheet-reader';
 import {gridDate} from '../assurance-tickets/grid-values';
@@ -33,7 +34,8 @@ export class SheetSyncService{
     const result=await this.process(c,actor);
     const inboundMs=Math.round(performance.now()-started);
     const updated=await applyOutboundChanges(c);
-    Object.assign(result,{outbound_cells_updated:updated,inbound_ms:inboundMs,outbound_ms:Math.round(performance.now()-started-inboundMs)});
+    const assigned=c.code==='SERVICE_ASSURANCE'?await reconcileDeliveryTeams(c.project_id,c.month_key,actor.userId,c.id):0;
+    Object.assign(result,{outbound_cells_updated:updated,technicians_auto_assigned:assigned,inbound_ms:inboundMs,outbound_ms:Math.round(performance.now()-started-inboundMs)});
     await db.query("UPDATE sheet_configurations SET last_success_at=now(),last_checked_at=now(),sync_status='success',latest_error=NULL WHERE id=$1",[id]);
     await db.query("UPDATE sheet_sync_logs SET finished_at=now(),status='success',details=$2 WHERE id=$1",[log.id,JSON.stringify(result)]);
     return result;
