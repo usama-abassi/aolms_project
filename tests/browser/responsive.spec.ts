@@ -364,6 +364,21 @@ test('Delivery grid shows one save status and contains wide cells on mobile',asy
  await section.getByText('Editing tips',{exact:true}).click();
  await expect(section.getByText('Type to replace a cell.',{exact:false})).toBeVisible();
  await noOverflow(page);
+ const column=section.getByRole('button',{name:'Resize Date column',exact:true});
+ const header=section.getByRole('columnheader').filter({has:page.getByRole('button',{name:'Resize Date column',exact:true})});
+ const beforeWidth=(await header.boundingBox())!.width;
+ await column.press('ArrowRight');
+ await expect.poll(async()=>(await header.boundingBox())!.width).toBeGreaterThan(beforeWidth);
+ const handle=section.getByRole('button',{name:'Resize row 1',exact:true});
+ const row=section.getByRole('row').filter({has:page.getByRole('button',{name:'Resize row 1',exact:true})});
+ const beforeHeight=(await row.boundingBox())!.height;
+ await handle.scrollIntoViewIfNeeded();
+ const box=(await handle.boundingBox())!;
+ await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
+ await page.mouse.down();
+ await page.mouse.move(box.x+box.width/2,box.y+box.height/2+24);
+ await page.mouse.up();
+ await expect.poll(async()=>(await row.boundingBox())!.height).toBeGreaterThan(beforeHeight);
 });
 
 test('slow access keeps the shell visible and reuses permission across routes',async({page})=>{
