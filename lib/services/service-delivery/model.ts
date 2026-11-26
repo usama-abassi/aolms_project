@@ -18,11 +18,15 @@ export function responseValues(s:any,t:any):Values {
  return calculateResponse(values);
 }
 export function compare(a:unknown,b:unknown,submitted:boolean){return !submitted?'Pending Submission':norm(a)&&norm(a)===norm(b)?'Correct':'Issue';}
+function orderTypeFamily(value:unknown){
+ const label=norm(value);
+ return /^(external|internal)(?=\s*-|$)/.exec(label)?.[1]??label;
+}
 export function auditOrder(t:any,submissions:any[],inventory:any[]){
  const o=orderValues(t),submitted=submissions.filter(s=>s.submitted_at&&['submitted','locked'].includes(s.status));
  const s=submitted.find(s=>s.technician_id===t.technician_id)||submitted[0];
  const r=s?responseValues(s,t):{};
- const orderType=compare(o.order_type,r.E,!!s),closeType=compare(o.connection_type,r.G,!!s);
+ const orderType=compare(orderTypeFamily(o.order_type),orderTypeFamily(r.E),!!s),closeType=compare(o.connection_type,r.G,!!s);
  const issues:string[]=[];
  if(!s)issues.push('Pending Submission');else {if(orderType==='Issue')issues.push('Order Type Issue');if(closeType==='Issue')issues.push('Close Type Issue');}
  if(norm(o.actioned)!=='delivered')issues.push('Actioned is not Delivered');

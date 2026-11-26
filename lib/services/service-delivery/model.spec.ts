@@ -32,3 +32,15 @@ describe('ONT lookup and reproducible output',()=>{
  it('preserves template styles in the final file without importing customer records',()=>{const bytes=deliveryFile([auditOrder(ticket,[submission],[])]);const book=XLSX.read(bytes,{cellStyles:true});expect(book.SheetNames).toEqual(['Delivery']);expect(book.Sheets.Delivery['!ref']).toBe('A1:BW5');expect(book.Sheets.Delivery.A5.z).toBe('d-mmm');const zip=XLSX.CFB.read(bytes,{type:'buffer'});const index=zip.FullPaths.indexOf('Root Entry/xl/styles.xml');expect(new TextDecoder().decode(zip.FileIndex[index].content as Uint8Array)).toContain('<fonts');});
  it('exports only ready records with exact four header rows and text order identifiers',()=>{const ready=auditOrder(ticket,[submission],[]),pending=auditOrder({...ticket,id:'pending'},[],[]);const book=deliveryWorkbook([ready,pending]);const bytes=XLSX.write(book,{type:'buffer',bookType:'xlsx'});const sheet=XLSX.read(bytes).Sheets.Delivery;expect(sheet['!ref']).toBe('A1:BW5');expect(sheet.AE4.v).toBe(deliveryTemplate.headers[3][30]);expect(sheet.C5.v).toBe('00123');expect(sheet.D5.v).toBe('External');expect(sheet['!merges']).toEqual(deliveryTemplate.merges);});
 });
+
+it.each([
+ ['External','External - Shift (Modify)','Correct'],
+ ['Internal - Shift (Modify)','Internal','Correct'],
+ ['External - Shift (Modify)','Internal','Issue'],
+ ['New','New (Provide) with FTTR','Issue'],
+])('compares shift variants by their order type family (%s / %s)',(controller,technician,expected)=>{
+ const result=auditOrder({...ticket,spreadsheet_fields:{delivery:{order_type:controller}}},[
+  {...submission,response_order_type:technician,delivery_fields:{...submission.delivery_fields,E:technician}}
+ ],[]);
+ expect(result.orderType).toBe(expected);
+});
