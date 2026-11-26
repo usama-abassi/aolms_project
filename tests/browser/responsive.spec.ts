@@ -502,7 +502,15 @@ test('Projects and Audit default to the latest month with records and allow olde
   await expect(month).toHaveValue('2026-02');
   const table=page.locator('main table');
   if(screen==='projects')await expect(table.getByRole('textbox',{name:'Order row 1',exact:true})).toHaveValue('FEB-LATEST');
-  else await expect(table.getByRole('row',{name:/FEB-LATEST/})).toBeVisible();
+  else {
+   await expect(table.getByRole('row',{name:/FEB-LATEST/})).toBeVisible();
+   const readiness=page.getByRole('region',{name:'Export readiness'});
+   await expect(readiness).toContainText('0 ready');
+   const reason=readiness.getByRole('button',{name:'Not submitted (includes drafts): 1',exact:true});
+   await reason.click();
+   await expect(reason).toHaveAttribute('aria-pressed','true');
+   await readiness.getByRole('button',{name:'Clear reason filter'}).click();
+ }
   await month.selectOption('2026-01');
   if(screen==='projects')await expect(table.getByRole('textbox',{name:'Order row 1',exact:true})).toHaveValue('JAN-ONLY');
   else await expect(table.getByRole('row',{name:/JAN-ONLY/})).toBeVisible();

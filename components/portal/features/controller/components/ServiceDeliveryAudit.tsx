@@ -8,24 +8,52 @@ import {api} from '../../assurance/api';
 import {deliveryRow,deliveryTemplate,type AuditOrder} from '@/lib/services/service-delivery/model';
 import {Button} from '../../../components/Button';
 import {Modal} from '../../../components/Modal';
+const exportReasons=(row:AuditOrder)=>row.submitted?[...new Set([...row.issues,...row.mappingIssues])]:['Pending Submission'];
+const reasonLabel=(reason:string)=>({
+ 'Pending Submission':'Not submitted (includes drafts)',
+ 'ONT Lookup Issue: Serial not found':'ONT serial not found in inventory',
+ 'ONT Lookup Issue: Ambiguous serial':'Multiple matches for the ONT serial',
+ 'ONT Lookup Issue: Missing Nce SN':'Missing NCE serial number',
+ 'ONT Lookup Issue: Missing PO Number':'ONT has no PO number',
+ 'Customer BJ formula cannot sum nonnumeric AP serial values':'AP serial text cannot be summed by the export formula',
+}[reason]??reason);
 export default function ServiceDeliveryAudit({projectId}:{projectId:string}){
  const client=useQueryClient();
  const query=useQuery({queryKey:['delivery-audit',projectId],queryFn:()=>api<AuditOrder[]>(`/service-delivery/workflow?mode=audit&project_id=${projectId}`),refetchInterval:15000});
  const [filter,setFilter]=useState('all'),[type,setType]=useState(''),[close,setClose]=useState(''),[search,setSearch]=useState(''),[from,setFrom]=useState(''),[to,setTo]=useState(''),[preview,setPreview]=useState(false),[page,setPage]=useState(0),[edit,setEdit]=useState<AuditOrder|null>(null),[history,setHistory]=useState<string|null>(null),[error,setError]=useState('');
+ const [blocker,setBlocker]=useState('');
  const [selectedMonth,setSelectedMonth]=useState<string|null>(null);
  const months=recordMonths((query.data||[]).map(r=>r.order.work_date));
  const month=selectedMonth??months[0]??'';
  const monthRows=(query.data||[]).filter(r=>inRecordMonth(r.order.work_date,month));
- const monthFilter=<RecordMonthSelect months={months} value={month} onChange={value=>{setSelectedMonth(value);setFrom('');setTo('');setPage(0);}}/>;
+ const monthFilter=<RecordMonthSelect months={months} value={month} onChange={value=>{setSelectedMonth(value);setBlocker('');setFrom('');setTo('');setPage(0);}}/>;
  const scope=monthRows.filter(r=>(!from||r.order.work_date.slice(0,10)>=from)&&(!to||r.order.work_date.slice(0,10)<=to)&&[r.order.ticket_number,r.technician,...Object.values(r.order)].some(v=>v.toLowerCase().includes(search.toLowerCase())));
- const rows=scope.filter(r=>(filter==='all'||(filter==='submitted'?r.submitted:!r.submitted))&&(!type||r.orderType===type)&&(!close||r.closeType===close));
+ const candidates=scope.filter(r=>(filter==='all'||(filter==='submitted'?r.submitted:!r.submitted))&&(!type||r.orderType===type)&&(!close||r.closeType===close));
+ const pendingCount=candidates.filter(r=>!r.submitted).length;
+ const submittedBlocked=candidates.filter(r=>r.submitted&&!r.ready).length;
+ const readyCount=candidates.filter(r=>r.ready).length;
+ const counts=new Map<string,number>();
+ for(const row of candidates)if(!row.ready)for(const reason of exportReasons(row))counts.set(reason,(counts.get(reason)??0)+1);
+ const reasons=[...counts].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0]));
+ const activeBlocker=counts.has(blocker)?blocker:'';
+ const rows=activeBlocker?candidates.filter(r=>!r.ready&&exportReasons(r).includes(activeBlocker)):candidates;
  const current=Math.min(page,Math.max(0,Math.ceil(rows.length/25)-1)),visible=rows.slice(current*25,current*25+25);
  const histories=useQuery({queryKey:['delivery-history',history],enabled:!!history,queryFn:()=>api<any[]>(`/service-delivery/workflow/${history}?mode=history`)});
  async function download(){setError('');try{const fresh=await api<AuditOrder[]>(`/service-delivery/workflow?mode=audit&project_id=${projectId}`);const selected=new Set(rows.map(r=>r.id));const valid=fresh.filter(r=>selected.has(r.id)&&r.ready);if(!valid.length)throw new Error('No records in this selection are ready for export. Resolve the listed issues first.');const {deliveryFile}=await import('@/lib/services/service-delivery/export');const bytes=deliveryFile(valid);const url=URL.createObjectURL(new Blob([bytes as BlobPart],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));const link=document.createElement('a');link.href=url;link.download='Service Delivery.xlsx';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);await query.refetch();}catch(e){setError((e as Error).message);}}
- return <div className="space-y-4"><h2 className="text-xl font-semibold">Service Delivery Audit</h2><div className="flex flex-wrap gap-2">{!query.isPending&&monthFilter}<input aria-label="Search audit" placeholder="Search orders" className="rounded border bg-transparent p-2" value={search} onChange={e=>setSearch(e.target.value)}/><label>From <input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label><label>To <input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label><Button variant="outline" onClick={()=>{setSelectedMonth(null);setFilter('all');setType('');setClose('');setSearch('');setFrom('');setTo('');setPage(0);}}>Clear filters</Button><Button variant="outline" onClick={()=>void query.refetch()}>Refresh</Button></div>
+ return <div className="space-y-4"><h2 className="text-xl font-semibold">Service Delivery Audit</h2><div className="flex flex-wrap gap-2">{!query.isPending&&monthFilter}<input aria-label="Search audit" placeholder="Search orders" className="rounded border bg-transparent p-2" value={search} onChange={e=>setSearch(e.target.value)}/><label>From <input type="date" value={from} onChange={e=>setFrom(e.target.value)}/></label><label>To <input type="date" value={to} onChange={e=>setTo(e.target.value)}/></label><Button variant="outline" onClick={()=>{setSelectedMonth(null);setBlocker('');setFilter('all');setType('');setClose('');setSearch('');setFrom('');setTo('');setPage(0);}}>Clear filters</Button><Button variant="outline" onClick={()=>void query.refetch()}>Refresh</Button></div>
  <div className="flex flex-wrap gap-3">{[['all','Total Orders',scope.length],['submitted','Submitted',scope.filter(r=>r.submitted).length],['pending','Not Submitted',scope.filter(r=>!r.submitted).length]].map(([key,label,count])=><button key={key} aria-pressed={filter===key} onClick={()=>{setFilter(String(key));setPage(0);}} className={`rounded border p-4 ${filter===key?'bg-primary-600 text-white':''}`}><span className="block">{label}</span><strong className="text-2xl">{count}</strong></button>)}</div>
  <div className="flex flex-wrap gap-4">{(['Order Type','Close Type'] as const).map(label=><div key={label}>{label}: {['Correct','Issue'].map(status=><Button key={status} variant={(label==='Order Type'?type:close)===status?'primary':'outline'} aria-pressed={(label==='Order Type'?type:close)===status} onClick={()=>{if(label==='Order Type')setType(type===status?'':status);else setClose(close===status?'':status);setPage(0);}}>{status}: {scope.filter(r=>(label==='Order Type'?r.orderType:r.closeType)===status).length}</Button>)}</div>)}</div>
- <div className="flex gap-3"><Button variant="outline" onClick={()=>setPreview(!preview)}>{preview?'Back to Audit':'Delivery preview'}</Button><Button onClick={download} disabled={!rows.some(r=>r.ready)}>Export ready records ({rows.filter(r=>r.ready).length})</Button></div><p>{rows.filter(r=>!r.ready).length} selected records have blocking issues and will be excluded from export. Drafts count as Not Submitted.</p>
+ <div className="flex gap-3"><Button variant="outline" onClick={()=>setPreview(!preview)}>{preview?'Back to Audit':'Delivery preview'}</Button><Button onClick={download} disabled={!rows.some(r=>r.ready)}>Export ready records ({rows.filter(r=>r.ready).length})</Button></div>{!query.isPending&&!query.error&&<section aria-label="Export readiness" className="space-y-3 rounded-lg border border-neutral-200 p-4 dark:border-neutral-700">
+ <h3 className="font-semibold">Export readiness</h3>
+ <p className="text-sm"><strong>{readyCount} ready</strong> · {pendingCount} not submitted · {submittedBlocked} submitted with blockers</p>
+ {!!reasons.length&&<>
+  <p className="text-sm text-neutral-600 dark:text-neutral-400">Select a reason to see affected orders. An order can appear under more than one reason.</p>
+  <div className="flex flex-wrap gap-2">
+   {reasons.map(([reason,count])=><Button key={reason} className="max-w-full whitespace-normal text-left" size="sm" variant={activeBlocker===reason?'primary':'outline'} aria-pressed={activeBlocker===reason} onClick={()=>{setBlocker(activeBlocker===reason?'':reason);setPage(0);}}>{reasonLabel(reason)}: {count}</Button>)}
+   {activeBlocker&&<Button size="sm" variant="ghost" onClick={()=>{setBlocker('');setPage(0);}}>Clear reason filter</Button>}
+  </div>
+ </>}
+ </section>}
  {(error||query.error)&&<p role="alert">{error||query.error?.message}</p>}{query.isPending?<LoadingState message="Loading audit…"/>:<div className="max-h-[65vh] overflow-auto"><table className="w-full border-collapse text-sm"><thead className="sticky top-0 bg-neutral-100 dark:bg-neutral-800"><tr>{(preview?['Readiness',...deliveryTemplate.headers[3].map((h,i)=>h||`Blank column ${i+1}`)]:['Order / Date','Team / Actioned','Submission','Controller Type','Technician Type','Order Type validation','Controller Connection Type','Technician Connection Type','Close Type validation','ONT / PO','Issues / Readiness','Actions']).map((h,i)=><th key={i} className="min-w-40 border p-2 text-left">{h}</th>)}</tr></thead><tbody>{visible.map(r=><tr key={r.id}>{preview?<><td className="border p-2">{r.ready?'Ready for Export':[...r.issues,...r.mappingIssues].join('; ')}</td>{deliveryRow(r).map((v,i)=><td key={i} className="border p-2">{String(v)}</td>)}</>:<><td className="border p-2">{r.order.ticket_number}<div>{r.order.work_date.slice(0,10)}</div><details><summary>Controller details</summary>{Object.entries(r.order).map(([k,v])=><div key={k}>{k}: {v}</div>)}</details></td><td className="border p-2">{r.technician}<div>{r.order.actioned}</div></td><td className="border p-2">{r.submitted?'Submitted':'Not Submitted'}<div>{r.submission?.submitted_at?new Date(r.submission.submitted_at).toLocaleString():''}</div></td>{[
  {key:'order-type',values:[r.order.order_type,r.response.E],result:r.orderType},
  {key:'close-type',values:[r.order.connection_type,r.response.G],result:r.closeType},
