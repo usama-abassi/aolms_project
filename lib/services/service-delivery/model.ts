@@ -40,7 +40,7 @@ export function auditOrder(t:any,submissions:any[],inventory:any[]){
  }
  const material=ont&&String(ont.item_code)==='10000646'?{code:'10000646',description:'F50 ONT V166a-20,English',quantity:1}:null;
  const mappingIssues:string[]=[];
- if(material)mappingIssues.push('Row 4 has no quantity column for material 10000646');
+
  // Customer explicitly confirmed the workbook's formula mappings, including BP/BW/BJ.
  // Preserve arithmetic semantics: serial text cannot silently become a zero quantity.
  if(s&&['BC','BD','BH','BI'].some(k=>r[k]?.trim()&&!Number.isFinite(Number(r[k]))))issues.push('Customer BJ formula cannot sum nonnumeric AP serial values');
@@ -57,7 +57,8 @@ export function deliveryRow(a:AuditOrder){
  row[0]=a.submission?.submitted_at?new Date(a.submission.submitted_at).getTime()/86400000+25569+3/24:'';
  row[1]=r.C||a.technician;row[2]=a.order.ticket_number;row[3]=a.internalOrderType;row[4]=a.order.connection_type;row[30]=a.poNumber;
  const sum=(keys:string[])=>keys.reduce((n,k)=>n+(Number(r[k])||0),0);
- row[61]=['BC','BD','BH','BI'].some(k=>r[k]?.trim()&&!Number.isFinite(Number(r[k])))?'#VALUE!':sum(['BC','BD','BH','BI']);
+ // Temporary customer mapping: add the F50 ONT quantity to material 10000647 (BJ).
+ row[61]=['BC','BD','BH','BI'].some(k=>r[k]?.trim()&&!Number.isFinite(Number(r[k])))?'#VALUE!':sum(['BC','BD','BH','BI'])+(a.material?.quantity??0);
  row[66]=sum(['S','AA','AR','BA']);row[67]=sum(['BJ','BK','BL','BM']);row[68]=sum(['Q','AB','AN','AY']);row[74]=sum(['K','W','AK','AW']);
  return row;
 }
