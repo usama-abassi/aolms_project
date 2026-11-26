@@ -102,4 +102,8 @@ pre { overflow-wrap: anywhere; }
 @keyframes aolms-shimmer { to { transform: translateX(100%); } }
 @media (prefers-reduced-motion: reduce) { .skeleton-shimmer::after { animation: none; } }
 
-.project-spreadsheet [data-cell] { width: 100%; min-width: 0; }
+.project-spreadsheet [data-cell] { width: 100%; min-width: 0; padding-block: 3px; line-height: 16px; }
+.project-spreadsheet tbody tr { height: 24px; }
+.project-spreadsheet tbody td { padding-block: 0; }
+.project-spreadsheet tbody textarea[data-cell] { vertical-align: middle; }
+.project-spreadsheet tbody textarea[data-cell]:not([data-editing="true"]) { max-height: var(--project-editor-height, none); }

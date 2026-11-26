@@ -379,6 +379,14 @@ test('Delivery grid shows one save status and contains wide cells on mobile',asy
  await page.mouse.move(box.x+box.width/2,box.y+box.height/2+24);
  await page.mouse.up();
  await expect.poll(async()=>(await row.boundingBox())!.height).toBeGreaterThan(beforeHeight);
+ await column.press('ArrowLeft');
+ await column.press('ArrowLeft');
+ await expect.poll(async()=>(await header.boundingBox())!.width).toBeLessThan(beforeWidth);
+ const expandedHeight=(await row.boundingBox())!.height;
+ await handle.press('ArrowUp');
+ await handle.press('ArrowUp');
+ await handle.press('ArrowUp');
+ await expect.poll(async()=>(await row.boundingBox())!.height).toBeLessThan(expandedHeight);
 });
 
 test('slow access keeps the shell visible and reuses permission across routes',async({page})=>{
