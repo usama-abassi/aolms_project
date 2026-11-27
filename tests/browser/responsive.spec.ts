@@ -516,3 +516,26 @@ test('Projects and Audit default to the latest month with records and allow olde
   else await expect(table.getByRole('row',{name:/JAN-ONLY/})).toBeVisible();
  }
 });
+
+test('Service Assurance Projects uses the shared grid layout, filters and sortable columns',async({page})=>{
+ await fixtures(page,'controller','light');
+ await page.setViewportSize({width:375,height:850});
+ await page.route('**/api/projects',route=>route.fulfill({json:[{...project,code:'SERVICE_DELIVERY',name:'Service Assurance'}]}));
+ const fields=[{key:'date',label:'Date',storage:'date',type:'text',excelColumn:'A'},{key:'ticket_number',label:'Ticket No',storage:'ticket_number',type:'text',excelColumn:'B'},{key:'status',label:'Status',storage:'status',type:'text',excelColumn:'C'}];
+ await page.route('**/api/service-assurance/**',route=>route.fulfill({json:new URL(route.request().url()).pathname.endsWith('/metadata')?{fields,technicians:[]}:[]}));
+ await page.route('**/api/service-assurance?*',route=>route.fulfill({json:[
+  {id:ticketId,version:1,date:'2026-09-10',ticket_number:'SA-101',status:'Open'},
+  {id:orderId,version:1,date:'2026-09-20',ticket_number:'SA-102',status:'Resolved'}
+ ]}));
+ await page.goto('/controller/projects');
+ const grid=page.getByRole('region',{name:'Service Assurance',exact:true});
+ const cell=grid.getByRole('textbox',{name:'Ticket No, row 1',exact:true});
+ await expect(cell).toHaveValue('SA-102');
+ await grid.getByRole('button',{name:/A · Date/}).click();
+ await expect(cell).toHaveValue('SA-101');
+ await grid.getByRole('combobox',{name:'Status filter'}).selectOption('Resolved');
+ await expect(cell).toHaveValue('SA-102');
+ await grid.getByRole('textbox',{name:'Search tickets'}).fill('missing');
+ await expect(grid.getByText('0 tickets', {exact:false})).toBeVisible();
+ await noOverflow(page);
+});

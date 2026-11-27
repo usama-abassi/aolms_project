@@ -46,7 +46,7 @@ function ResizeHandle({label,axis,onResize}:{label:string;axis:'row'|'column';on
   return (column?size?.width:size?.height)??0;
  };
  const resize=(size:number)=>onResize(Math.round(Math.max(column?56:24,Math.min(column?800:320,size))));
- return <button type="button" aria-label={label} title={label}
+ return <button type="button" data-grid-resize={axis} aria-label={label} title={label}
   className={`absolute z-10 touch-none rounded-sm hover:bg-primary-500/40 focus-visible:bg-primary-500/40 ${column?'inset-y-0 right-0 w-3 cursor-col-resize':'inset-x-0 bottom-0 h-2.5 cursor-row-resize'}`}
   onPointerDown={event=>{
    if(event.button!==0)return;
