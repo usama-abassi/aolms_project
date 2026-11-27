@@ -16,7 +16,17 @@ export function deliveryWorkbook(rows:AuditOrder[]){
 export function deliveryFile(rows:AuditOrder[]):Uint8Array {
  const buffer=XLSX.write(deliveryWorkbook(rows),{type:'buffer',bookType:'xlsx'});
  const archive=XLSX.CFB.read(buffer,{type:'buffer'}),encode=new TextEncoder();
- const entry=archive.FileIndex[archive.FullPaths.indexOf('Root Entry/xl/worksheets/sheet1.xml')];
+ const part=(path:string)=>{
+  const index=archive.FullPaths.indexOf('Root Entry/'+path);
+  if(index<0)throw new Error('Missing Excel package part: '+path);
+  return archive.FileIndex[index];
+ };
+ const replacePart=(path:string,value:string)=>{
+  const entry=part(path),content=encode.encode(value);
+  entry.content=content;
+  entry.size=content.length;
+ };
+ const entry=part('xl/worksheets/sheet1.xml');
  let xml=new TextDecoder().decode(entry.content as Uint8Array);
  xml=xml.replace(/<c\b([^>]+)>/g,(tag,attrs:string)=>{
   const match=attrs.match(/\br="([A-Z]+)(\d+)"/);if(!match)return tag;
@@ -24,8 +34,9 @@ export function deliveryFile(rows:AuditOrder[]):Uint8Array {
   const style=(format.styles as Record<string,number>)[address];
   return style==null?tag:`<c${attrs.replace(/\s+s="\d+"/,'')} s="${style}">`;
  });
- XLSX.CFB.utils.cfb_add(archive,'xl/worksheets/sheet1.xml',encode.encode(xml));
- XLSX.CFB.utils.cfb_add(archive,'xl/styles.xml',encode.encode(format.stylesXML));
- XLSX.CFB.utils.cfb_add(archive,'xl/theme/theme1.xml',encode.encode(format.themeXML));
+ // Update the original ZIP parts in place: adding a second copy triggers Excel repair.
+ replacePart('xl/worksheets/sheet1.xml',xml);
+ replacePart('xl/styles.xml',format.stylesXML);
+ replacePart('xl/theme/theme1.xml',format.themeXML);
  return new Uint8Array(XLSX.CFB.write(archive,{type:'buffer',fileType:'zip'}));
 }
