@@ -30,14 +30,18 @@ describe('ONT lookup and reproducible output',()=>{
    const a=auditOrder(t,[ap],[{...ont,item_code}]);
    expect(a.material?.code).toBe(item_code);
    expect(deliveryRow(a)[27]).toBe(1);
-   expect(deliveryRow(a)[61]).toBe(2);
+   expect(deliveryRow(a)[61]).toBe(1);
   }
  });
  it('handles a missing serial explicitly',()=>{const a=auditOrder({...t,spreadsheet_fields:{delivery:{...t.spreadsheet_fields.delivery,nce_sn:''}}},[s],[ont]);expect(a.ontStatus).toBe('Missing Nce SN');});
  it('does not increment materials or modify source records on repeated generation',()=>{const before=JSON.stringify([t,s,ont]);expect(deliveryRow(auditOrder(t,[s],[ont]))).toEqual(deliveryRow(auditOrder(t,[s],[ont])));expect(JSON.stringify([t,s,ont])).toBe(before);});
  it('sums invisible fiber by this response, not erroneous workbook row offsets',()=>{expect(deliveryRow(auditOrder(ticket,[submission],[]))[66]).toBe(14);});
  it('retains the customer-confirmed BP and BW formula mappings',()=>{const a=auditOrder(ticket,[{...submission,delivery_fields:{...submission.delivery_fields,BJ:'2',BK:'1',K:'3',W:'4'}}],[]);expect(a.ready).toBe(true);expect(deliveryRow(a)[67]).toBe(3);expect(deliveryRow(a)[74]).toBe(7);});
- it('flags an actual arithmetic error without changing the customer BJ formula',()=>{const a=auditOrder(ticket,[{...submission,delivery_fields:{...submission.delivery_fields,BC:'SERIAL123'}}],[]);expect(a.ready).toBe(false);expect(deliveryRow(a)[61]).toBe('#VALUE!');});
+ it('counts entered AP serials and preserves them in the export',()=>{
+  const a=auditOrder(ticket,[{...submission,delivery_fields:{...submission.delivery_fields,BC:'SERIAL123',BD:'008765',BH:'-',BI:'0'}}],[]);
+  expect(a.ready).toBe(true);
+  expect(deliveryRow(a).slice(61,66)).toEqual([2,'SERIAL123','008765','-','0']);
+ });
  it('preserves template styles in the final file without importing customer records',()=>{const bytes=deliveryFile([auditOrder(ticket,[submission],[])]);const book=XLSX.read(bytes,{cellStyles:true});expect(book.SheetNames).toEqual(['Delivery']);expect(book.Sheets.Delivery['!ref']).toBe('A1:BW5');expect(book.Sheets.Delivery.A5.z).toBe('d-mmm');const zip=XLSX.CFB.read(bytes,{type:'buffer'});for(const path of ['xl/worksheets/sheet1.xml','xl/styles.xml','xl/theme/theme1.xml'])expect(zip.FullPaths.filter(name=>name==='Root Entry/'+path)).toHaveLength(1);const index=zip.FullPaths.indexOf('Root Entry/xl/styles.xml');expect(new TextDecoder().decode(zip.FileIndex[index].content as Uint8Array)).toContain('<fonts');});
  it('exports only ready records with exact four header rows and text order identifiers',()=>{const ready=auditOrder(ticket,[submission],[]),pending=auditOrder({...ticket,id:'pending'},[],[]);const book=deliveryWorkbook([ready,pending]);const bytes=XLSX.write(book,{type:'buffer',bookType:'xlsx'});const sheet=XLSX.read(bytes).Sheets.Delivery;expect(sheet['!ref']).toBe('A1:BW5');expect(sheet.AE4.v).toBe(deliveryTemplate.headers[3][30]);expect(sheet.C5.v).toBe('00123');expect(sheet.D5.v).toBe('External');expect(sheet['!merges']).toEqual(deliveryTemplate.merges);});
 });

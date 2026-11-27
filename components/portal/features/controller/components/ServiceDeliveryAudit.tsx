@@ -15,7 +15,6 @@ const reasonLabel=(reason:string)=>({
  'ONT Lookup Issue: Ambiguous serial':'Multiple matches for the ONT serial',
  'ONT Lookup Issue: Missing Nce SN':'Missing NCE serial number',
  'ONT Lookup Issue: Missing PO Number':'ONT has no PO number',
- 'Customer BJ formula cannot sum nonnumeric AP serial values':'AP serial text cannot be summed by the export formula',
 }[reason]??reason);
 export default function ServiceDeliveryAudit({projectId}:{projectId:string}){
  const client=useQueryClient();

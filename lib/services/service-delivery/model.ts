@@ -46,9 +46,6 @@ export function auditOrder(t:any,submissions:any[],inventory:any[]){
   itemCode==='10000471'?{code:itemCode,description:'Wi-Fi 6 ONT',quantity:1}:null;
  const mappingIssues:string[]=[];
 
- // Customer explicitly confirmed the workbook's formula mappings, including BP/BW/BJ.
- // Preserve arithmetic semantics: serial text cannot silently become a zero quantity.
- if(s&&['BC','BD','BH','BI'].some(k=>r[k]?.trim()&&!Number.isFinite(Number(r[k]))))issues.push('Customer BJ formula cannot sum nonnumeric AP serial values');
  return {id:t.id,order:o,controllerOrderType,technician:t.technician_name||'',submission:s||null,response:r,submitted:!!s,orderType,closeType,ontStatus,poNumber,material,issues,mappingIssues,ready:!issues.length&&!mappingIssues.length,internalOrderType:orderType==='Correct'?controllerOrderType:'',externalOrderType:orderType==='Correct'?controllerOrderType:''};
 }
 export type AuditOrder=ReturnType<typeof auditOrder>;
@@ -64,7 +61,8 @@ export function deliveryRow(a:AuditOrder){
  const sum=(keys:string[])=>keys.reduce((n,k)=>n+(Number(r[k])||0),0);
  // The customer groups Wi-Fi 6 and F50 ONT quantities in column AB.
  if(a.material)row[27]=a.material.quantity;
- row[61]=['BC','BD','BH','BI'].some(k=>r[k]?.trim()&&!Number.isFinite(Number(r[k])))?'#VALUE!':sum(['BC','BD','BH','BI']);
+ // BJ holds the device count; BK:BN keep the original AP serial fields.
+ row[61]=['BC','BD','BH','BI'].filter(k=>!['','-','0','n/a','na','none'].includes(norm(r[k]))).length;
  row[66]=sum(['S','AA','AR','BA']);row[67]=sum(['BJ','BK','BL','BM']);row[68]=sum(['Q','AB','AN','AY']);row[74]=sum(['K','W','AK','AW']);
  return row;
 }
