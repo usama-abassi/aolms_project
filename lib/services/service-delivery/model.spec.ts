@@ -22,8 +22,17 @@ describe('ONT lookup and reproducible output',()=>{
  const t={...ticket,spreadsheet_fields:{delivery:{...ticket.spreadsheet_fields.delivery,order_type:'New'}}};
  const s={...submission,delivery_fields:{...submission.delivery_fields,E:'NEW'}};
  const ont={serial_number:'ABC',po_number:'PO-123',item_code:'10000646'};
- it('uses an exact normalized serial and associated PO',()=>{const a=auditOrder(t,[s],[ont]);expect(a.ontStatus).toBe('Correct');expect(deliveryRow(a)[30]).toBe('PO-123');expect(a.material?.quantity).toBe(1);expect(a.mappingIssues).toEqual([]);expect(a.ready).toBe(true);expect(deliveryRow(a)[61]).toBe(1);});
+ it('uses an exact normalized serial and associated PO',()=>{const a=auditOrder(t,[s],[ont]);expect(a.ontStatus).toBe('Correct');expect(deliveryRow(a)[30]).toBe('PO-123');expect(a.material?.quantity).toBe(1);expect(a.mappingIssues).toEqual([]);expect(a.ready).toBe(true);expect(deliveryRow(a)[27]).toBe(1);expect(deliveryRow(a)[61]).toBe(0);});
  it.each([[[], 'Serial not found'],[[{...ont,serial_number:'ABCD'}],'Serial not found'],[[ont,{...ont,po_number:'OTHER'}],'Ambiguous serial'],[[{...ont,po_number:''}],'Missing PO Number']])('blocks failed ONT lookup %j',(inventory,status)=>{const a=auditOrder(t,[s],inventory as any[]);expect(a.ontStatus).toBe(status);expect(a.ready).toBe(false);expect(a.poNumber).toBe('');});
+ it('groups Wi-Fi 6 and F50 ONTs in AB without changing the AP quantity',()=>{
+  const ap={...s,delivery_fields:{...s.delivery_fields,BC:'2'}};
+  for(const item_code of ['10000471','10000646']){
+   const a=auditOrder(t,[ap],[{...ont,item_code}]);
+   expect(a.material?.code).toBe(item_code);
+   expect(deliveryRow(a)[27]).toBe(1);
+   expect(deliveryRow(a)[61]).toBe(2);
+  }
+ });
  it('handles a missing serial explicitly',()=>{const a=auditOrder({...t,spreadsheet_fields:{delivery:{...t.spreadsheet_fields.delivery,nce_sn:''}}},[s],[ont]);expect(a.ontStatus).toBe('Missing Nce SN');});
  it('does not increment materials or modify source records on repeated generation',()=>{const before=JSON.stringify([t,s,ont]);expect(deliveryRow(auditOrder(t,[s],[ont]))).toEqual(deliveryRow(auditOrder(t,[s],[ont])));expect(JSON.stringify([t,s,ont])).toBe(before);});
  it('sums invisible fiber by this response, not erroneous workbook row offsets',()=>{expect(deliveryRow(auditOrder(ticket,[submission],[]))[66]).toBe(14);});

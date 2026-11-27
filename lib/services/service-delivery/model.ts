@@ -41,7 +41,9 @@ export function auditOrder(t:any,submissions:any[],inventory:any[]){
   ontStatus=!o.nce_sn.trim()?'Missing Nce SN':!matches.length?'Serial not found':matches.length>1?'Ambiguous serial':!String(matches[0].po_number??'').trim()?'Missing PO Number':'Correct';
   if(ontStatus==='Correct'){ont=matches[0];poNumber=String(ont.po_number).trim();}else issues.push('ONT Lookup Issue: '+ontStatus);
  }
- const material=ont&&String(ont.item_code)==='10000646'?{code:'10000646',description:'F50 ONT V166a-20,English',quantity:1}:null;
+ const itemCode=String(ont?.item_code??'').trim();
+ const material=itemCode==='10000646'?{code:itemCode,description:'F50 ONT V166a-20,English',quantity:1}:
+  itemCode==='10000471'?{code:itemCode,description:'Wi-Fi 6 ONT',quantity:1}:null;
  const mappingIssues:string[]=[];
 
  // Customer explicitly confirmed the workbook's formula mappings, including BP/BW/BJ.
@@ -60,8 +62,9 @@ export function deliveryRow(a:AuditOrder){
  row[0]=a.submission?.submitted_at?new Date(a.submission.submitted_at).getTime()/86400000+25569+3/24:'';
  row[1]=r.C||a.technician;row[2]=a.order.ticket_number;row[3]=a.internalOrderType;row[4]=a.order.connection_type;row[30]=a.poNumber;
  const sum=(keys:string[])=>keys.reduce((n,k)=>n+(Number(r[k])||0),0);
- // Temporary customer mapping: add the F50 ONT quantity to material 10000647 (BJ).
- row[61]=['BC','BD','BH','BI'].some(k=>r[k]?.trim()&&!Number.isFinite(Number(r[k])))?'#VALUE!':sum(['BC','BD','BH','BI'])+(a.material?.quantity??0);
+ // The customer groups Wi-Fi 6 and F50 ONT quantities in column AB.
+ if(a.material)row[27]=a.material.quantity;
+ row[61]=['BC','BD','BH','BI'].some(k=>r[k]?.trim()&&!Number.isFinite(Number(r[k])))?'#VALUE!':sum(['BC','BD','BH','BI']);
  row[66]=sum(['S','AA','AR','BA']);row[67]=sum(['BJ','BK','BL','BM']);row[68]=sum(['Q','AB','AN','AY']);row[74]=sum(['K','W','AK','AW']);
  return row;
 }
