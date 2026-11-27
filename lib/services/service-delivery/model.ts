@@ -43,14 +43,15 @@ export function auditOrder(t:any,submissions:any[],inventory:any[]){
  }
  const itemCode=String(ont?.item_code??'').trim();
  const material=itemCode==='10000646'?{code:itemCode,description:'F50 ONT V166a-20,English',quantity:1}:
-  itemCode==='10000471'?{code:itemCode,description:'Wi-Fi 6 ONT',quantity:1}:null;
+  itemCode==='10000471'?{code:itemCode,description:'Wi-Fi 6 ONT',quantity:1}:
+  itemCode==='10000527'||itemCode==='10000526'?{code:itemCode,description:itemCode==='10000527'?'F30 master ONT (V183a)':'F30 ONT (K153-10)',quantity:1}:null;
  const mappingIssues:string[]=[];
 
  return {id:t.id,order:o,controllerOrderType,technician:t.technician_name||'',submission:s||null,response:r,submitted:!!s,orderType,closeType,ontStatus,poNumber,material,issues,mappingIssues,ready:!issues.length&&!mappingIssues.length,internalOrderType:orderType==='Correct'?controllerOrderType:'',externalOrderType:orderType==='Correct'?controllerOrderType:''};
 }
 export type AuditOrder=ReturnType<typeof auditOrder>;
 // Verified by the response-column references and matching material descriptions, not row offsets.
-const direct:Record<number,string>={5:'AD',6:'AE',7:'AF',8:'AG',9:'AC',11:'BQ',13:'BU',14:'AS',15:'AP',16:'AM',17:'AQ',19:'BV',20:'P',21:'J',23:'BS',24:'R',28:'BN',31:'BR',58:'BG',59:'BO',62:'BC',63:'BD',64:'BH',65:'BI',69:'BO'};
+const direct:Record<number,string>={5:'AD',6:'AE',7:'AF',8:'AG',9:'AC',11:'BQ',13:'BU',14:'AS',15:'AP',16:'AM',17:'AQ',19:'BV',20:'P',21:'J',23:'BS',24:'R',28:'BN',31:'BR',58:'BG',59:'BO',62:'BC',63:'BD',64:'BH',65:'BI'};
 export function deliveryRow(a:AuditOrder){
  const row:(string|number)[]=Array(75).fill(''),r=a.response;
  for(const index of [10,12,18,22,27,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57])row[index]='-';
@@ -60,7 +61,10 @@ export function deliveryRow(a:AuditOrder){
  row[1]=r.C||a.technician;row[2]=a.order.ticket_number;row[3]=a.internalOrderType;row[4]=a.order.connection_type;row[30]=a.poNumber;
  const sum=(keys:string[])=>keys.reduce((n,k)=>n+(Number(r[k])||0),0);
  // The customer groups Wi-Fi 6 and F50 ONT quantities in column AB.
- if(a.material)row[27]=a.material.quantity;
+ if(a.material){
+  const column=a.material.code==='10000527'?69:a.material.code==='10000526'?70:27;
+  row[column]=a.material.quantity;
+ }
  // BJ holds the device count; BK:BN keep the original AP serial fields.
  row[61]=['BC','BD','BH','BI'].filter(k=>!['','-','0','n/a','na','none'].includes(norm(r[k]))).length;
  row[66]=sum(['S','AA','AR','BA']);row[67]=sum(['BJ','BK','BL','BM']);row[68]=sum(['Q','AB','AN','AY']);row[74]=sum(['K','W','AK','AW']);

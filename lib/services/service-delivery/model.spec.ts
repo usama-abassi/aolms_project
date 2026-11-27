@@ -74,3 +74,24 @@ it.each([
  expect(deliveryRow(audit)[3]).toBe(expected);
  expect(orderValues(order).order_type).toBe(order_type);
 });
+
+
+it.each([['10000527','BR',69],['10000526','BS',70]] as const)('exports one matched %s ONT in %s',(item_code,_column,index)=>{
+ const t={...ticket,spreadsheet_fields:{delivery:{...ticket.spreadsheet_fields.delivery,order_type:'New',fttr_type:'F30'}}};
+ const response={...submission,delivery_fields:{...submission.delivery_fields,E:'New',BO:'SERIAL123'}};
+ const a=auditOrder(t,[response],[{serial_number:'ABC',po_number:'PO-1',item_code}]);
+ const row=deliveryRow(a);
+ expect(a.ready).toBe(true);
+ expect(row[index]).toBe(1);
+ expect(row[index===69?70:69]).toBe('');
+ expect(row[59]).toBe('SERIAL123');
+});
+
+it('includes monthly ledger balances as a separate Excel dashboard',()=>{
+ const order=auditOrder(ticket,[submission],[]);
+ const bytes=deliveryFile([order],[{month:'2026-11',rows:[{item_code:'10000527',name:'F30',unit:'piece',opening:20,received:2,used:14,faulty:1,remaining:7}]}]);
+ const book=XLSX.read(bytes);
+ expect(book.SheetNames).toEqual(['Delivery','Stock Dashboard']);
+ expect(XLSX.utils.sheet_to_json(book.Sheets['Stock Dashboard'],{header:1})[1]).toEqual(['2026-11','10000527','F30','piece',20,2,14,1,7]);
+ expect(book.Sheets.Delivery.C5.v).toBe('00123');
+});

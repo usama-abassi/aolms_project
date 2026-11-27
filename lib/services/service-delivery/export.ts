@@ -1,7 +1,19 @@
 import * as XLSX from 'xlsx';
 import {deliveryRow,deliveryTemplate,type AuditOrder} from './model';
 import format from './template-format.json';
-export function deliveryWorkbook(rows:AuditOrder[]){
+export type DeliveryStockRow={item_code:string|null;name:string;unit:string;opening:number;received:number;used:number;faulty:number;remaining:number};
+export type DeliveryStockMonth={month:string;rows:DeliveryStockRow[]};
+
+function stockDashboard(data:DeliveryStockMonth[]){
+ const headings=['Month','Material code','Material','Unit','Opening stock','Received','Used','Faulty','Remaining'];
+ const entries=data.flatMap(({month,rows})=>rows.length?rows.map(r=>[month,r.item_code??'',r.name,r.unit,r.opening,r.received,r.used,r.faulty,r.remaining]):[[month,'','No inventory records for this month']]);
+ const sheet=XLSX.utils.aoa_to_sheet([headings,...entries]);
+ sheet['!cols']=[12,17,46,13,16,14,14,14,16].map(wch=>({wch}));
+ sheet['!autofilter']={ref:`A1:I${entries.length+1}`};
+ return sheet;
+}
+
+export function deliveryWorkbook(rows:AuditOrder[],stock?:DeliveryStockMonth[]){
  const valid=rows.filter(r=>r.ready);
  const sheet=XLSX.utils.aoa_to_sheet([...deliveryTemplate.headers,...valid.map(deliveryRow)]);
  sheet['!merges']=deliveryTemplate.merges;
@@ -9,12 +21,14 @@ export function deliveryWorkbook(rows:AuditOrder[]){
  sheet['!rows']=deliveryTemplate.rows;
  sheet['!autofilter']={ref:`A4:BW${Math.max(4,valid.length+4)}`};
  for(let i=0;i<valid.length;i++)if(sheet[`A${i+5}`])sheet[`A${i+5}`].z='d-mmm';
- const book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,sheet,'Delivery');return book;
+ const book=XLSX.utils.book_new();XLSX.utils.book_append_sheet(book,sheet,'Delivery');
+ if(stock)XLSX.utils.book_append_sheet(book,stockDashboard(stock),'Stock Dashboard');
+ return book;
 }
 // Retain the customer's fonts, fills, borders and number formats. Only formatting
 // metadata is retained from the reference file, never its customer records.
-export function deliveryFile(rows:AuditOrder[]):Uint8Array {
- const buffer=XLSX.write(deliveryWorkbook(rows),{type:'buffer',bookType:'xlsx'});
+export function deliveryFile(rows:AuditOrder[],stock?:DeliveryStockMonth[]):Uint8Array {
+ const buffer=XLSX.write(deliveryWorkbook(rows,stock),{type:'buffer',bookType:'xlsx'});
  const archive=XLSX.CFB.read(buffer,{type:'buffer'}),encode=new TextEncoder();
  const part=(path:string)=>{
   const index=archive.FullPaths.indexOf('Root Entry/'+path);
