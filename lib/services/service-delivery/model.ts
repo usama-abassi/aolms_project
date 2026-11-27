@@ -28,7 +28,7 @@ export function auditOrder(t:any,submissions:any[],inventory:any[]){
  const s=submitted.find(s=>s.technician_id===t.technician_id)||submitted[0];
  const r=s?responseValues(s,t):{};
  const rawOrderType=o.order_type.trim();
- const controllerOrderType=norm(rawOrderType)==='new with fttr'?(o.fttr_type.trim()?'New with FTTR':'New'):norm(rawOrderType)==='new'?'New':rawOrderType;
+ const controllerOrderType=orderTypeFamily(rawOrderType)==='new'?(o.fttr_type.trim()?'New with FTTR':'New'):rawOrderType;
  const orderType=compare(orderTypeFamily(controllerOrderType),orderTypeFamily(r.E),!!s),closeType=compare(o.connection_type,r.G,!!s);
  const issues:string[]=[];
  if(!s)issues.push('Pending Submission');else {if(orderType==='Issue')issues.push('Order Type Issue');if(closeType==='Issue')issues.push('Close Type Issue');}
