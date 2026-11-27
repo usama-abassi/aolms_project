@@ -44,3 +44,17 @@ it.each([
  ],[]);
  expect(result.orderType).toBe(expected);
 });
+
+
+it.each([
+ ['New with FTTR','   ','New','New'],
+ ['New with FTTR','F50','New','New with FTTR'],
+ ['New','F50','New with FTTR','New'],
+])('requires both controller entries for FTTR (%s / %s)',(order_type,fttr_type,response,expected)=>{
+ const order={...ticket,spreadsheet_fields:{delivery:{...ticket.spreadsheet_fields.delivery,order_type,fttr_type}}};
+ const audit=auditOrder(order,[{...submission,delivery_fields:{...submission.delivery_fields,E:response}}],[{serial_number:'ABC',po_number:'123',item_code:'10000471'}]);
+ expect(audit.orderType).toBe('Correct');
+ expect(audit.controllerOrderType).toBe(expected);
+ expect(deliveryRow(audit)[3]).toBe(expected);
+ expect(orderValues(order).order_type).toBe(order_type);
+});

@@ -20,18 +20,21 @@ export function responseValues(s:any,t:any):Values {
 export function compare(a:unknown,b:unknown,submitted:boolean){return !submitted?'Pending Submission':norm(a)&&norm(a)===norm(b)?'Correct':'Issue';}
 function orderTypeFamily(value:unknown){
  const label=norm(value);
+ if(label==='new with fttr')return 'new';
  return /^(external|internal)(?=\s*-|$)/.exec(label)?.[1]??label;
 }
 export function auditOrder(t:any,submissions:any[],inventory:any[]){
  const o=orderValues(t),submitted=submissions.filter(s=>s.submitted_at&&['submitted','locked'].includes(s.status));
  const s=submitted.find(s=>s.technician_id===t.technician_id)||submitted[0];
  const r=s?responseValues(s,t):{};
- const orderType=compare(orderTypeFamily(o.order_type),orderTypeFamily(r.E),!!s),closeType=compare(o.connection_type,r.G,!!s);
+ const rawOrderType=o.order_type.trim();
+ const controllerOrderType=norm(rawOrderType)==='new with fttr'?(o.fttr_type.trim()?'New with FTTR':'New'):norm(rawOrderType)==='new'?'New':rawOrderType;
+ const orderType=compare(orderTypeFamily(controllerOrderType),orderTypeFamily(r.E),!!s),closeType=compare(o.connection_type,r.G,!!s);
  const issues:string[]=[];
  if(!s)issues.push('Pending Submission');else {if(orderType==='Issue')issues.push('Order Type Issue');if(closeType==='Issue')issues.push('Close Type Issue');}
  if(norm(o.actioned)!=='delivered')issues.push('Actioned is not Delivered');
  if(submitted.length>1&&!submitted.some(s=>s.technician_id===t.technician_id))issues.push('Multiple submitted responses require review');
- const requiresOnt=['new','upgrade','new (provide)','new (provide) with fttr','new with fttr'].includes(norm(o.order_type));
+ const requiresOnt=['new','upgrade','new (provide)','new (provide) with fttr','new with fttr'].includes(norm(controllerOrderType));
  const matches=inventory.filter(i=>norm(i.serial_number)===norm(o.nce_sn));
  let ontStatus=requiresOnt?'Pending validation':'Not applicable',poNumber='',ont:any=null;
  if(requiresOnt&&orderType==='Correct'){
@@ -44,7 +47,7 @@ export function auditOrder(t:any,submissions:any[],inventory:any[]){
  // Customer explicitly confirmed the workbook's formula mappings, including BP/BW/BJ.
  // Preserve arithmetic semantics: serial text cannot silently become a zero quantity.
  if(s&&['BC','BD','BH','BI'].some(k=>r[k]?.trim()&&!Number.isFinite(Number(r[k]))))issues.push('Customer BJ formula cannot sum nonnumeric AP serial values');
- return {id:t.id,order:o,technician:t.technician_name||'',submission:s||null,response:r,submitted:!!s,orderType,closeType,ontStatus,poNumber,material,issues,mappingIssues,ready:!issues.length&&!mappingIssues.length,internalOrderType:orderType==='Correct'?o.order_type.trim():'',externalOrderType:orderType==='Correct'?o.order_type.trim():''};
+ return {id:t.id,order:o,controllerOrderType,technician:t.technician_name||'',submission:s||null,response:r,submitted:!!s,orderType,closeType,ontStatus,poNumber,material,issues,mappingIssues,ready:!issues.length&&!mappingIssues.length,internalOrderType:orderType==='Correct'?controllerOrderType:'',externalOrderType:orderType==='Correct'?controllerOrderType:''};
 }
 export type AuditOrder=ReturnType<typeof auditOrder>;
 // Verified by the response-column references and matching material descriptions, not row offsets.
