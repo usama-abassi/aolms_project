@@ -539,3 +539,51 @@ test('Service Assurance Projects uses the shared grid layout, filters and sortab
  await expect(grid.getByText('0 tickets', {exact:false})).toBeVisible();
  await noOverflow(page);
 });
+
+test.describe('touch layouts',()=>{
+ test.use({hasTouch:true,isMobile:true,viewport:{width:320,height:720}});
+ test('controller Projects uses the full phone width and tapping a grid cell opens editing',async({page})=>{
+  await fixtures(page,'controller','light');
+  await page.route('**/api/service-delivery/workflow?*',route=>route.fulfill({json:new URL(route.request().url()).searchParams.has('mode')?{technicians:[]}:[
+   {id:ticketId,version:1,work_date:'2026-09-26',ticket_number:'DEL-1001'}
+  ]}));
+  await page.goto('/controller/projects');
+  const grid=page.getByRole('region',{name:'Service Delivery',exact:true});
+  await expect(grid.getByText('Swipe to see more columns. Tap a cell to edit.')).toBeVisible();
+  await expect(page.getByRole('navigation',{name:'Main navigation'})).toBeHidden();
+  await page.getByRole('button',{name:'Toggle menu'}).tap();
+  await expect(page.getByRole('navigation',{name:'Main navigation'})).toBeVisible();
+  await page.getByRole('button',{name:'Close sidebar',exact:true}).tap({position:{x:300,y:300}});
+  const date=grid.getByRole('textbox',{name:'Date row 1',exact:true});
+  await date.tap();
+  await expect(date).toHaveAttribute('data-editing','true');
+  await noOverflow(page);
+ });
+
+ test('technicians can use task cards, forms and inventory on a 320px phone',async({page})=>{
+  await fixtures(page,'technician','light');
+  await page.route('**/api/projects',route=>route.fulfill({json:[{...project,code:'SERVICE_DELIVERY',name:'Service Assurance'}]}));
+  await page.route('**/api/service-assurance/tasks',route=>route.fulfill({json:[{id:ticketId,date:'2026-09-26',ticket_number:'SA-1001',team_name:'Test Technician',old_serial:'OLD123',new_serial:'NEW123',submitted_at:null}]}));
+  await page.route('**/api/service-assurance/responses/*',route=>route.fulfill({json:{id:ticketId,version:1,response_version:0,values:{},submitted_at:null}}));
+  await page.route('**/api/service-delivery/workflow/*',route=>route.fulfill({json:{ticket:{ticket_number:'DEL-1001'},values:{B:profile.email,C:profile.full_name,D:'DEL-1001'},can_edit:true}}));
+  await page.goto('/technician/projects');
+  const task=page.getByRole('article').filter({hasText:'SA-1001'});
+  await expect(task).toBeVisible();
+  await task.getByRole('button',{name:'Fill response'}).tap();
+  const dialog=page.getByRole('dialog');
+  await expect(dialog.getByRole('button',{name:'Submit response'})).toBeAttached();
+  expect(await dialog.evaluate(el=>el.scrollWidth<=el.clientWidth+1)).toBe(true);
+  await dialog.getByRole('button',{name:'Close modal'}).tap();
+  await page.goto('/technician/assurance-form/'+ticketId);
+  await expect(page.getByRole('heading',{name:/Service Delivery Form/})).toBeVisible();
+  await noOverflow(page);
+  await page.getByRole('navigation',{name:'Technician pages'}).getByRole('link',{name:'To-Do'}).tap();
+  await page.getByRole('button',{name:'Request Inventory',exact:true}).tap();
+  await expect(page.getByRole('dialog',{name:'Request Inventory'})).toBeVisible();
+  await noOverflow(page);
+  await page.getByRole('button',{name:'Close modal'}).tap();
+  await page.getByRole('navigation',{name:'Technician pages'}).getByRole('link',{name:'Submitted Orders'}).tap();
+  await expect(page).toHaveURL(/\/technician\/submitted$/);
+  await noOverflow(page);
+ });
+});

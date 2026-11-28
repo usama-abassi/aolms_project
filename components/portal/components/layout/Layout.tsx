@@ -76,9 +76,9 @@ export const Layout: React.FC<LayoutProps> = ({ navItems, onLogout, currentUser,
           currentUser={signedInUser || currentUser}
           onLogout={onLogout}
         />
-        {technician && <nav aria-label="Technician pages" className="technician-tabs grid grid-cols-2 gap-2 px-3 py-2 md:hidden">
+        {technician && <nav aria-label="Technician pages" className="technician-tabs grid grid-cols-3 gap-1 px-2 py-2 md:hidden">
           {navItems.map(item => <Link key={item.path} href={item.path} aria-current={pathname === item.path ? 'page' : undefined}
-            className={`flex min-h-[48px] items-center justify-center gap-2 rounded-lg px-2 text-sm font-semibold ${pathname === item.path ? 'bg-primary-600 text-white' : 'text-neutral-700 dark:text-neutral-200'}`}>{item.icon}{item.label}</Link>)}
+            className={`flex min-h-[48px] min-w-0 items-center justify-center gap-1 rounded-lg px-1 text-center text-xs font-semibold sm:text-sm ${pathname === item.path ? 'bg-primary-600 text-white' : 'text-neutral-700 dark:text-neutral-200'}`}><span className="hidden shrink-0 sm:inline-flex">{item.icon}</span>{item.label}</Link>)}
         </nav>}
         {offline && <p role="status" className="border-b border-warning-200 bg-warning-50 px-4 py-3 text-sm text-warning-800 dark:border-warning-800 dark:bg-warning-950 dark:text-warning-200">You are offline. Keep this page open and reconnect before saving or submitting.</p>}
         <main id="main-content" className={`app-main flex-1 p-3 sm:p-5 lg:p-8 ${technician ? 'technician-workspace' : ''}`}>

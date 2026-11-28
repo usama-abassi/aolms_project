@@ -21,8 +21,22 @@ export default function ServiceAssuranceTasks({userId,todo}:{userId:string;todo:
  const rows=(tasks.data||[]).filter(r=>inRecordMonth(r.date,month)).filter(r=>todo?!r.submitted_at:!!r.submitted_at),pages=Math.max(1,Math.ceil(rows.length/20)),current=Math.min(page,pages-1);
  return <section className="space-y-3" aria-label="Service Assurance tasks"><h2 className="text-lg font-semibold">Service Assurance ({rows.length})</h2>
  {!tasks.isPending&&<RecordMonthSelect months={months} value={month} onChange={value=>{setSelectedMonth(value);setPage(0);}}/>}
- {tasks.error?<p role="alert">{tasks.error.message}</p>:<Table columns={[{key:'id',label:'Action',render:(_v:unknown,row:Task)=><Button variant="outline" onClick={()=>setSelected(row.id)}>{row.submitted_at?'View':'Fill response'}</Button>},{key:'ticket_number',label:'Ticket No'},{key:'team_name',label:'Team'},{key:'assigned_datetime',label:'Assigned Date/Time'},{key:'old_serial',label:'SN OLD ONT'},{key:'new_serial',label:'New SN No As Per NCE'},{key:'submitted_at',label:'Response',render:v=>v?'Submitted':'Not filled'}]} data={rows.slice(current*20,(current+1)*20)} rowKey="id" isLoading={tasks.isPending} emptyMessage={`No ${todo?'pending':'submitted'} Service Assurance replacement tickets.`}/>}
- {pages>1&&<div className="flex items-center gap-3"><Button variant="outline" disabled={!current} onClick={()=>setPage(current-1)}>Previous</Button><span>Page {current+1} of {pages}</span><Button variant="outline" disabled={current+1>=pages} onClick={()=>setPage(current+1)}>Next</Button></div>}
+ <div className="md:hidden">
+  {tasks.error?<p role="alert">{tasks.error.message}</p>:tasks.isPending?<LoadingState message="Loading Service Assurance tasks…"/>:
+   rows.length?rows.slice(current*20,(current+1)*20).map(row=><article key={row.id} className="task-card">
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+     <h3 className="min-w-0 font-semibold">{row.ticket_number}</h3>
+     <Button variant="outline" onClick={()=>setSelected(row.id)}>{row.submitted_at?'View':'Fill response'}</Button>
+    </div>
+    <dl><div><dt>Team</dt><dd>{row.team_name||'—'}</dd></div><div><dt>Status</dt><dd>{row.submitted_at?'Submitted':'Not filled'}</dd></div>
+    <div className="col-span-2"><dt>Assigned date/time</dt><dd>{row.assigned_datetime||'—'}</dd></div>
+    <div><dt>Old ONT serial</dt><dd>{row.old_serial||'—'}</dd></div><div><dt>New ONT serial</dt><dd>{row.new_serial||'—'}</dd></div></dl>
+   </article>):<p className="rounded-lg border p-4 text-sm text-neutral-600 dark:border-neutral-700 dark:text-neutral-300">No {todo?'pending':'submitted'} Service Assurance replacement tickets.</p>}
+ </div>
+ <div className="hidden md:block">
+{tasks.error?<p role="alert">{tasks.error.message}</p>:<Table columns={[{key:'id',label:'Action',render:(_v:unknown,row:Task)=><Button variant="outline" onClick={()=>setSelected(row.id)}>{row.submitted_at?'View':'Fill response'}</Button>},{key:'ticket_number',label:'Ticket No'},{key:'team_name',label:'Team'},{key:'assigned_datetime',label:'Assigned Date/Time'},{key:'old_serial',label:'SN OLD ONT'},{key:'new_serial',label:'New SN No As Per NCE'},{key:'submitted_at',label:'Response',render:v=>v?'Submitted':'Not filled'}]} data={rows.slice(current*20,(current+1)*20)} rowKey="id" isLoading={tasks.isPending} emptyMessage={`No ${todo?'pending':'submitted'} Service Assurance replacement tickets.`}/>}
+ </div>
+ {pages>1&&<div className="flex flex-wrap items-center gap-3"><Button variant="outline" disabled={!current} onClick={()=>setPage(current-1)}>Previous</Button><span>Page {current+1} of {pages}</span><Button variant="outline" disabled={current+1>=pages} onClick={()=>setPage(current+1)}>Next</Button></div>}
  {selected&&<ResponseForm key={selected} id={selected} userId={userId} close={()=>setSelected(null)}/>}
  </section>;
 }
@@ -49,6 +63,6 @@ function ResponseForm({id,userId,close}:{id:string;userId:string;close:()=>void}
  const style='mt-1 block w-full rounded-lg border p-2 dark:border-neutral-600 bg-transparent'
  return <label key={key} className="block text-sm">{key}{key==='ONT Replaced '?<select aria-label={key.trim()} className={style} value={value} onChange={e=>edit(key,e.target.value)}><option value="">Select</option><option>Yes</option><option>No</option></select>:materialFields.includes(key)?<input aria-label={key.trim()} type="number" min="0" step="any" className={style} value={value} onChange={e=>edit(key,e.target.value)}/>:<textarea aria-label={key.trim()} rows={2} readOnly={readOnly} value={value} onChange={e=>edit(key,e.target.value)} className={style}/>}</label>
  })}</fieldset>
- {error&&<p role="alert" className="text-danger-600">{error}</p>}<div className="flex justify-end gap-2"><Button variant="outline" disabled={busy} onClick={close}>Close</Button><Button variant="outline" disabled={busy} onClick={e=>void submit(e,true)}>Save draft</Button><Button type="submit" disabled={busy}>{busy?'Saving…':submitted?'Update submission':'Submit response'}</Button></div></form>}
+ {error&&<p role="alert" className="text-danger-600">{error}</p>}<div className="flex flex-wrap justify-end gap-2"><Button variant="outline" disabled={busy} onClick={close}>Close</Button><Button variant="outline" disabled={busy} onClick={e=>void submit(e,true)}>Save draft</Button><Button type="submit" disabled={busy}>{busy?'Saving…':submitted?'Update submission':'Submit response'}</Button></div></form>}
  </Modal>;
 }

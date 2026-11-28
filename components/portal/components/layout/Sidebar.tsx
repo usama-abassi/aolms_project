@@ -40,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse,
   }, [isMobile, isCollapsed, onToggleCollapse]);
 
   return (
-    <div className="relative w-16 shrink-0">
+    <div className="relative w-0 shrink-0 md:w-16">
     {isMobile && !isCollapsed && (
       <button
         type="button"
@@ -59,7 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse,
       className={cn(
         'fixed top-0 left-0 h-screen z-50 shrink-0 border-r border-neutral-200 dark:border-neutral-700 transition-[width] duration-200 motion-reduce:transition-none overflow-hidden',
         'bg-white dark:bg-neutral-900',
-        expanded ? 'w-64 shadow-lg' : 'w-16',
+        expanded ? 'w-64 shadow-lg' : 'hidden w-16 md:block',
       )}
     >
       <div className="flex flex-col h-full">

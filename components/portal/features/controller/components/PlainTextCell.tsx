@@ -9,6 +9,7 @@ export function timestampShortcut(shift:boolean,alt:boolean){
 export default function PlainTextCell({value,displayValue,label,cell,readOnly,error,onCommit,onMove,onSelect,onCache}:{value:string;displayValue?:string;label:string;cell:string;readOnly:boolean;error?:string;onCommit:(value:string)=>void;onMove:(key:string,shift:boolean)=>void;onSelect:()=>void;onCache:(value:string|null)=>void}){
  const [editing,setEditing]=useState(false),[text,setText]=useState(value);
  const input=useRef<HTMLTextAreaElement>(null),buffer=useRef(value),original=useRef(value),editingRef=useRef(false);
+ const touch=useRef(false);
  const direct=useRef(false);
  const caret=useRef<number|null>(null);
  useLayoutEffect(()=>{if(caret.current!==null){input.current?.setSelectionRange(caret.current,caret.current);caret.current=null;}});
@@ -42,7 +43,15 @@ export default function PlainTextCell({value,displayValue,label,cell,readOnly,er
  return <textarea ref={input} aria-label={label} aria-readonly={readOnly} aria-invalid={!!error} title={error||(displayValue!==undefined&&displayValue!==value?value:undefined)||(readOnly?'Automatic field (read-only)':undefined)} data-cell={cell} data-editing={editing} rows={Math.max(1,Math.min(5,text.split('\n').length))} value={editing?text:displayValue??text} readOnly={readOnly||!editing}
   className={`block w-full min-w-48 resize-none border-0 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500 ${readOnly?'bg-neutral-100 text-neutral-500 dark:bg-neutral-800':'bg-transparent'}`}
   onFocus={()=>{if(!editingRef.current){original.current=value;buffer.current=value;} }}
-  onPointerDown={()=>{onSelect();}}
+  onPointerDown={e=>{touch.current=e.pointerType==='touch';onSelect();}}
+  onClick={e=>{
+   if(!touch.current||readOnly||editingRef.current)return;
+   touch.current=false;
+   // Open the keyboard within the touch gesture, including on iOS.
+   e.currentTarget.readOnly=false;
+   start(value);
+   e.currentTarget.focus();
+  }}
   onDoubleClick={e=>{
    e.preventDefault()
    start(value)

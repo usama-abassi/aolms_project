@@ -212,7 +212,7 @@ export default function SpreadsheetInteraction({rows,fields,technicians,apply,fo
   if(!p)return
   const range={anchor:event.shiftKey&&selection?selection.anchor:p,end:p}
   select(range,false)
-  if(event.target instanceof HTMLSelectElement&&!event.shiftKey)return
+  if(event.pointerType==='touch'||event.target instanceof HTMLSelectElement&&!event.shiftKey)return
   event.preventDefault()
   focus(p.row,p.col)
   drag.current={mode:'select',source:range,pointerId:event.pointerId,x:event.clientX,y:event.clientY}
