@@ -35,7 +35,11 @@ export function auditOrder(t:any,submissions:any[],inventory:any[]){
  if(norm(o.actioned)!=='delivered')issues.push('Actioned is not Delivered');
  if(submitted.length>1&&!submitted.some(s=>s.technician_id===t.technician_id))issues.push('Multiple submitted responses require review');
  const requiresOnt=['new','upgrade','new (provide)','new (provide) with fttr','new with fttr'].includes(norm(controllerOrderType));
- const matches=inventory.filter(i=>norm(i.serial_number)===norm(o.nce_sn));
+ const matches=[...new Map(inventory.filter(i=>norm(i.serial_number)===norm(o.nce_sn)).map(i=>{
+  const model=norm(i.model);
+  const modelKey=['8x ont','x8'].includes(model)?'x8':model;
+  return [JSON.stringify([norm(i.po_number),norm(i.item_code),modelKey]),i] as const;
+ })).values()];
  let ontStatus=requiresOnt?'Pending validation':'Not applicable',poNumber='',ont:any=null;
  if(requiresOnt&&orderType==='Correct'){
   ontStatus=!o.nce_sn.trim()?'Missing Nce SN':!matches.length?'Serial not found':matches.length>1?'Ambiguous serial':!String(matches[0].po_number??'').trim()?'Missing PO Number':'Correct';

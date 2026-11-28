@@ -33,6 +33,12 @@ describe('ONT lookup and reproducible output',()=>{
    expect(deliveryRow(a)[61]).toBe(1);
   }
  });
+ it('treats repeated X8 inventory rows with the same PO as one lookup',()=>{
+  const x8={...ont,model:'X8',item_code:''};
+  const legacy={...x8,model:'8X ONT ',item_code:null};
+  expect(auditOrder(t,[s],[x8,x8,legacy,legacy]).poNumber).toBe('PO-123');
+  expect(auditOrder(t,[s],[x8,{...legacy,po_number:'DIFFERENT'}]).ontStatus).toBe('Ambiguous serial');
+ });
  it('handles a missing serial explicitly',()=>{const a=auditOrder({...t,spreadsheet_fields:{delivery:{...t.spreadsheet_fields.delivery,nce_sn:''}}},[s],[ont]);expect(a.ontStatus).toBe('Missing Nce SN');});
  it('does not increment materials or modify source records on repeated generation',()=>{const before=JSON.stringify([t,s,ont]);expect(deliveryRow(auditOrder(t,[s],[ont]))).toEqual(deliveryRow(auditOrder(t,[s],[ont])));expect(JSON.stringify([t,s,ont])).toBe(before);});
  it('sums invisible fiber by this response, not erroneous workbook row offsets',()=>{expect(deliveryRow(auditOrder(ticket,[submission],[]))[66]).toBe(14);});
